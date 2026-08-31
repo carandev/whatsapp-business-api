@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using WhatsAppBusinessApi.Api.Clients;
 using WhatsAppBusinessApi.Api.Configuration;
 using WhatsAppBusinessApi.Api.ErrorMapping;
+using WhatsAppBusinessApi.Api.Webhooks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +57,7 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 app.MapMessagingEndpoints();
+app.MapWhatsAppWebhooks();
 
 app.Run();
 
