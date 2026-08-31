@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using WhatsAppBusinessApi.Api.Configuration;
+using WhatsAppBusinessApi.Api.ErrorMapping;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,13 @@ builder.Services.AddOptions<WebhookOptions>()
     .Bind(builder.Configuration.GetSection(WebhookOptions.SectionName))
     .ValidateOnStart();
 
+// Error mapping: translate GraphApiException into ProblemDetails via a
+// single IExceptionHandler, so every Graph API failure (incl. the 24h
+// customer-service-window rejection) always becomes the same response shape.
+// See design.md "Error translation" decision.
+builder.Services.AddExceptionHandler<GraphApiExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -28,6 +36,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
