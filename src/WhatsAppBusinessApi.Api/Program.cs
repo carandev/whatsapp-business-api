@@ -1,4 +1,6 @@
+using System.Net.Http.Headers;
 using Microsoft.Extensions.Options;
+using WhatsAppBusinessApi.Api.Clients;
 using WhatsAppBusinessApi.Api.Configuration;
 using WhatsAppBusinessApi.Api.ErrorMapping;
 
@@ -29,6 +31,18 @@ builder.Services.AddOptions<WebhookOptions>()
 builder.Services.AddExceptionHandler<GraphApiExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+// Outbound messaging: typed HttpClient wrapping Meta Graph API's
+// POST /{phone-number-id}/messages. IHttpClientFactory avoids socket
+// exhaustion and is mockable via a fake primary handler in tests.
+// See design.md "Graph client" decision.
+builder.Services.AddHttpClient<IWhatsAppClient, WhatsAppClient>((sp, client) =>
+{
+    var graphApiOptions = sp.GetRequiredService<IOptions<GraphApiOptions>>().Value;
+    client.BaseAddress = new Uri(graphApiOptions.ApiBaseUrl.TrimEnd('/') + "/");
+    client.DefaultRequestHeaders.Authorization =
+        new AuthenticationHeaderValue("Bearer", graphApiOptions.AccessToken);
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -40,6 +54,8 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
+
+app.MapMessagingEndpoints();
 
 app.Run();
 
