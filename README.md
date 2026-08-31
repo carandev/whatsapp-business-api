@@ -128,11 +128,12 @@ Unit and integration tests cover all logic with mocked/fake HTTP handlers (no re
 
 ## Success Criteria (from the MVP proposal)
 
-- [x] Service sends a text message to a real WhatsApp number via Cloud API and gets a success response — `POST /messages` implemented and integration-tested (PR 3); real-API confirmation is the manual smoke-test checklist above
+- [x] Automated tests cover the send-message success and failure code paths against a mocked/faked Graph API — `POST /messages` implemented and integration-tested (PR 3)
+- [ ] Service sends a text message to a **real** WhatsApp number via Cloud API and gets a success response — no automated test calls the real Graph API; pending the manual smoke-test checklist above
 - [x] `GET /webhook` verification handshake returns the challenge when verify token matches — implemented and integration-tested (PR 4)
 - [x] `POST /webhook` validates `X-Hub-Signature-256` and rejects invalid signatures — implemented and unit/integration-tested (PR 4)
 - [x] Inbound message payloads are parsed, logged, and their message type reported — implemented and unit-tested against text/image/status fixtures (PR 4)
 - [x] Graph API errors (including 24h-window rejections) are mapped to the service's own `ProblemDetails` error format — implemented and unit-tested (PR 2), exercised end-to-end via `POST /messages` (PR 3)
 - [x] All credentials are externalized, never hardcoded — `IOptions<T>` + fail-fast `ValidateOnStart()` (PR 1); no secrets committed to `appsettings*.json`
 
-All six success criteria are implemented and covered by automated tests. The two criteria that reference "a real WhatsApp number" / "real Meta webhook delivery" are additionally listed in the manual smoke-test checklist above, since they require live Meta credentials and a reachable dev tunnel that automated tests intentionally do not depend on.
+Six of the seven items above are implemented and fully covered by automated tests. The "real WhatsApp number" item is intentionally left unchecked: automated tests only exercise the code paths against a mocked/faked Graph API, not Meta's live endpoint. That item — along with "real Meta webhook delivery" — is tracked in the manual smoke-test checklist above, since both require live Meta credentials and a reachable dev tunnel that automated tests intentionally do not depend on.

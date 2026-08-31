@@ -1,9 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using WhatsAppBusinessApi.Api.Clients;
+using WhatsAppBusinessApi.Api.ErrorMapping;
 
 namespace WhatsAppBusinessApi.Api.Tests.Clients;
 
@@ -74,6 +76,40 @@ public class MessagingEndpointsTests
         var response = await client.PostAsJsonAsync("/messages", new { to = "15551234567", body = "Hello" });
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostMessages_GenericGraphError_ReturnsProblemDetails502()
+    {
+        using var factory = CreateFactory(new StubGraphHandler(_ =>
+        {
+            return new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = JsonContent.Create(new
+                {
+                    error = new
+                    {
+                        message = "Invalid recipient",
+                        type = "OAuthException",
+                        code = 100,
+                        fbtrace_id = "trace-invalid",
+                    },
+                }),
+            };
+        }));
+
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/messages", new { to = "15551234567", body = "Hello" });
+
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = document.RootElement;
+
+        Assert.Equal(GraphApiErrorMapper.GraphApiErrorType, root.GetProperty("type").GetString());
+        Assert.Equal(100, root.GetProperty("errorCode").GetInt32());
+        Assert.Equal("OAuthException", root.GetProperty("errorType").GetString());
     }
 
     private static WebApplicationFactory<Program> CreateFactory(DelegatingHandler fakeHandler)
