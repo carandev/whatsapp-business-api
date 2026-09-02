@@ -25,6 +25,13 @@ public sealed class WhatsAppOptions
     public string PhoneNumberId { get; set; } = default!;
 
     /// <summary>
+    /// The WhatsApp Business Account (WABA) ID used as the default owner for WABA-scoped
+    /// resources, such as message templates. Optional — only required when a consumer calls a
+    /// WABA-scoped method (e.g. <c>IWhatsAppTemplatesClient</c>) without a per-call override.
+    /// </summary>
+    public string? WabaId { get; set; }
+
+    /// <summary>
     /// The Meta Graph API version segment, e.g. <c>v21.0</c>. Defaults to <c>v21.0</c>.
     /// </summary>
     public string ApiVersion { get; set; } = "v21.0";

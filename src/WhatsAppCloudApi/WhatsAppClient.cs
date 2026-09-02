@@ -44,6 +44,26 @@ public sealed class WhatsAppClient : IWhatsAppClient
     }
 
     /// <inheritdoc />
+    public HttpRequestMessage CreateWabaRequest(HttpMethod method, string relativePathTemplate, string? wabaIdOverride = null)
+    {
+        ArgumentNullException.ThrowIfNull(method);
+        ArgumentException.ThrowIfNullOrEmpty(relativePathTemplate);
+
+        var wabaId = wabaIdOverride ?? _options.WabaId;
+        if (wabaId is null)
+        {
+            throw new InvalidOperationException(
+                "No WABA ID is available. Pass a wabaIdOverride or set WhatsAppOptions.WabaId.");
+        }
+
+        var relativePath = relativePathTemplate.Replace("{waba_id}", wabaId, StringComparison.Ordinal);
+
+        var request = new HttpRequestMessage(method, relativePath);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.AccessToken);
+        return request;
+    }
+
+    /// <inheritdoc />
     public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);

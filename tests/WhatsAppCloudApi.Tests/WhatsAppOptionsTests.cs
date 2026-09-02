@@ -90,4 +90,46 @@ public class WhatsAppOptionsTests
         Assert.False(isValid);
         Assert.Contains(results, r => r.MemberNames.Contains(nameof(WhatsAppOptions.PhoneNumberId)));
     }
+
+    [Fact]
+    public void ValidationPassesWhenWabaIdIsAbsent()
+    {
+        var options = new WhatsAppOptions
+        {
+            AccessToken = "test-access-token",
+            PhoneNumberId = "123456789",
+        };
+
+        var results = new List<ValidationResult>();
+        var isValid = Validator.TryValidateObject(
+            options,
+            new ValidationContext(options),
+            results,
+            validateAllProperties: true);
+
+        Assert.True(isValid);
+        Assert.Empty(results);
+        Assert.Null(options.WabaId);
+    }
+
+    [Fact]
+    public void WabaIdBindsFromConfiguration_WhenPresent()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["WhatsApp:AccessToken"] = "test-access-token",
+                ["WhatsApp:PhoneNumberId"] = "123456789",
+                ["WhatsApp:WabaId"] = "waba-987654321",
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddOptions<WhatsAppOptions>().Bind(configuration.GetSection(WhatsAppOptions.SectionName));
+        var provider = services.BuildServiceProvider();
+
+        var options = provider.GetRequiredService<IOptions<WhatsAppOptions>>().Value;
+
+        Assert.Equal("waba-987654321", options.WabaId);
+    }
 }

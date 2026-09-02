@@ -83,4 +83,54 @@ public class WhatsAppClientTests
 
         Assert.Equal("https://graph.facebook.com/v21.0/", baseAddress);
     }
+
+    [Fact]
+    public void CreateWabaRequest_AttachesBearerAuthorizationHeader()
+    {
+        var options = CreateOptions();
+        options.WabaId = "default-waba-id";
+        var (client, _) = CreateClient(options);
+
+        var request = client.CreateWabaRequest(HttpMethod.Get, "{waba_id}/message_templates");
+
+        Assert.NotNull(request.Headers.Authorization);
+        Assert.Equal("Bearer", request.Headers.Authorization!.Scheme);
+        Assert.Equal(options.AccessToken, request.Headers.Authorization.Parameter);
+    }
+
+    [Fact]
+    public void CreateWabaRequest_UsesOptionsWabaId_WhenNoOverrideSupplied()
+    {
+        var options = CreateOptions();
+        options.WabaId = "default-waba-id";
+        var (client, _) = CreateClient(options);
+
+        var request = client.CreateWabaRequest(HttpMethod.Get, "{waba_id}/message_templates");
+
+        Assert.Equal($"{options.WabaId}/message_templates", request.RequestUri!.ToString());
+    }
+
+    [Fact]
+    public void CreateWabaRequest_PerCallOverrideTakesPrecedence_OverOptionsWabaId()
+    {
+        var options = CreateOptions();
+        options.WabaId = "default-waba-id";
+        var (client, _) = CreateClient(options);
+
+        var request = client.CreateWabaRequest(HttpMethod.Get, "{waba_id}/message_templates", wabaIdOverride: "override-waba-id");
+
+        Assert.Equal("override-waba-id/message_templates", request.RequestUri!.ToString());
+        Assert.NotEqual($"{options.WabaId}/message_templates", request.RequestUri.ToString());
+    }
+
+    [Fact]
+    public void CreateWabaRequest_Throws_WhenNeitherOverrideNorOptionsWabaIdIsSet()
+    {
+        var options = CreateOptions();
+        options.WabaId = null;
+        var (client, _) = CreateClient(options);
+
+        Assert.Throws<InvalidOperationException>(
+            () => client.CreateWabaRequest(HttpMethod.Get, "{waba_id}/message_templates"));
+    }
 }

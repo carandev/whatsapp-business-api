@@ -48,6 +48,8 @@ public class ClientInterfacesTests
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(new[] { nameof(IWhatsAppClient.CreateRequest), nameof(IWhatsAppClient.SendAsync) }, methodNames);
+        Assert.Equal(
+            new[] { nameof(IWhatsAppClient.CreateRequest), nameof(IWhatsAppClient.CreateWabaRequest), nameof(IWhatsAppClient.SendAsync) },
+            methodNames);
     }
 }
