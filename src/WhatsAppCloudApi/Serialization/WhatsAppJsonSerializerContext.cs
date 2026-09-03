@@ -5,6 +5,7 @@ using WhatsAppCloudApi.Models.Messages;
 using WhatsAppCloudApi.Models.Messages.Interactive;
 using WhatsAppCloudApi.Models.PhoneNumbers;
 using WhatsAppCloudApi.Models.Templates;
+using WhatsAppCloudApi.Models.Webhooks;
 
 namespace WhatsAppCloudApi.Serialization;
 
@@ -120,6 +121,39 @@ namespace WhatsAppCloudApi.Serialization;
 [JsonSerializable(typeof(CtaUrlAction))]
 [JsonSerializable(typeof(CtaUrlInteractive))]
 [JsonSerializable(typeof(SendCtaUrlMessageRequest))]
+// Webhooks — inbound message payload models (PR2 of issue #8)
+[JsonSerializable(typeof(WebhookEnvelope))]
+[JsonSerializable(typeof(WebhookEntry))]
+[JsonSerializable(typeof(WebhookChange))]
+[JsonSerializable(typeof(WebhookMetadata))]
+[JsonSerializable(typeof(MessagesWebhookPayload))]
+[JsonSerializable(typeof(WebhookContact))]
+[JsonSerializable(typeof(WebhookContactProfile))]
+[JsonSerializable(typeof(WebhookMessage))]
+[JsonSerializable(typeof(WebhookMessageContext))]
+[JsonSerializable(typeof(TextWebhookMessage))]
+[JsonSerializable(typeof(WebhookTextContent))]
+[JsonSerializable(typeof(ImageWebhookMessage))]
+[JsonSerializable(typeof(DocumentWebhookMessage))]
+[JsonSerializable(typeof(AudioWebhookMessage))]
+[JsonSerializable(typeof(VideoWebhookMessage))]
+[JsonSerializable(typeof(StickerWebhookMessage))]
+[JsonSerializable(typeof(WebhookMediaContent))]
+[JsonSerializable(typeof(LocationWebhookMessage))]
+[JsonSerializable(typeof(WebhookLocation))]
+[JsonSerializable(typeof(ContactsWebhookMessage))]
+[JsonSerializable(typeof(ButtonWebhookMessage))]
+[JsonSerializable(typeof(WebhookButtonPayload))]
+[JsonSerializable(typeof(InteractiveWebhookMessage))]
+[JsonSerializable(typeof(WebhookInteractiveReply))]
+[JsonSerializable(typeof(WebhookButtonReply))]
+[JsonSerializable(typeof(WebhookListReply))]
+[JsonSerializable(typeof(WebhookInteractiveReplyDetail))]
+[JsonSerializable(typeof(ReactionWebhookMessage))]
+[JsonSerializable(typeof(WebhookReaction))]
+[JsonSerializable(typeof(RequestWelcomeWebhookMessage))]
+[JsonSerializable(typeof(SystemWebhookMessage))]
+[JsonSerializable(typeof(WebhookSystemContent))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }
