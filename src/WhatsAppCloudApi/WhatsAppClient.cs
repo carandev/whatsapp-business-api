@@ -64,6 +64,17 @@ public sealed class WhatsAppClient : IWhatsAppClient
     }
 
     /// <inheritdoc />
+    public HttpRequestMessage CreateAbsoluteRequest(HttpMethod method, Uri absoluteUri)
+    {
+        ArgumentNullException.ThrowIfNull(method);
+        ArgumentNullException.ThrowIfNull(absoluteUri);
+
+        var request = new HttpRequestMessage(method, absoluteUri);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.AccessToken);
+        return request;
+    }
+
+    /// <inheritdoc />
     public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);

@@ -133,4 +133,42 @@ public class WhatsAppClientTests
         Assert.Throws<InvalidOperationException>(
             () => client.CreateWabaRequest(HttpMethod.Get, "{waba_id}/message_templates"));
     }
+
+    [Fact]
+    public void CreateAbsoluteRequest_AttachesBearerAuthorizationHeader()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(options);
+
+        var request = client.CreateAbsoluteRequest(HttpMethod.Get, new Uri("https://cdn.example.com/media/abc123"));
+
+        Assert.NotNull(request.Headers.Authorization);
+        Assert.Equal("Bearer", request.Headers.Authorization!.Scheme);
+        Assert.Equal(options.AccessToken, request.Headers.Authorization.Parameter);
+    }
+
+    [Fact]
+    public void CreateAbsoluteRequest_UsesTheGivenUriVerbatim_WithNoTokenSubstitution()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(options);
+        var absoluteUri = new Uri("https://cdn.example.com/media/abc123?token=xyz");
+
+        var request = client.CreateAbsoluteRequest(HttpMethod.Get, absoluteUri);
+
+        Assert.Equal(absoluteUri, request.RequestUri);
+    }
+
+    [Fact]
+    public async Task CreateAbsoluteRequest_SendsToItsHost_NotTheClientBaseAddressHost()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options);
+        var request = client.CreateAbsoluteRequest(HttpMethod.Get, new Uri("https://cdn.example.com/media/abc123"));
+
+        await client.SendAsync(request);
+
+        Assert.Equal("cdn.example.com", handler.LastRequest!.RequestUri!.Host);
+        Assert.NotEqual("graph.facebook.com", handler.LastRequest.RequestUri.Host);
+    }
 }
