@@ -33,7 +33,8 @@ public class ClientInterfacesTests
         var resourceInterfaces = ExpectedInterfaces.Where(type =>
             type != typeof(IWhatsAppClient) &&
             type != typeof(IWhatsAppTemplatesClient) &&
-            type != typeof(IWhatsAppMessagesClient));
+            type != typeof(IWhatsAppMessagesClient) &&
+            type != typeof(IWhatsAppMediaClient));
 
         Assert.All(resourceInterfaces, type =>
         {
@@ -52,8 +53,24 @@ public class ClientInterfacesTests
             .ToArray();
 
         Assert.Equal(
-            new[] { nameof(IWhatsAppClient.CreateRequest), nameof(IWhatsAppClient.CreateWabaRequest), nameof(IWhatsAppClient.SendAsync) },
+            new[]
+            {
+                nameof(IWhatsAppClient.CreateAbsoluteRequest),
+                nameof(IWhatsAppClient.CreateRequest),
+                nameof(IWhatsAppClient.CreateWabaRequest),
+                nameof(IWhatsAppClient.SendAsync),
+            },
             methodNames);
+    }
+
+    [Fact]
+    public void IWhatsAppMediaClient_DeclaresOnlyItsDocumentedUploadOverloads()
+    {
+        var methods = typeof(IWhatsAppMediaClient)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+        Assert.Equal(3, methods.Length);
+        Assert.All(methods, m => Assert.Equal(nameof(IWhatsAppMediaClient.UploadAsync), m.Name));
     }
 
     [Fact]
