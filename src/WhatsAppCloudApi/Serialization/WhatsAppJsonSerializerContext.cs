@@ -110,6 +110,16 @@ namespace WhatsAppCloudApi.Serialization;
 [JsonSerializable(typeof(ReplyButtonsAction))]
 [JsonSerializable(typeof(ReplyButtonsInteractive))]
 [JsonSerializable(typeof(SendReplyButtonsMessageRequest))]
+// Interactive messages — list + CTA URL (PR2 of issue #1)
+[JsonSerializable(typeof(ListRow))]
+[JsonSerializable(typeof(ListSection))]
+[JsonSerializable(typeof(ListAction))]
+[JsonSerializable(typeof(ListInteractive))]
+[JsonSerializable(typeof(SendListMessageRequest))]
+[JsonSerializable(typeof(CtaUrlParameters))]
+[JsonSerializable(typeof(CtaUrlAction))]
+[JsonSerializable(typeof(CtaUrlInteractive))]
+[JsonSerializable(typeof(SendCtaUrlMessageRequest))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }
