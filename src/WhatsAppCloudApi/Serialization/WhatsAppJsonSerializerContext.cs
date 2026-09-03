@@ -154,6 +154,15 @@ namespace WhatsAppCloudApi.Serialization;
 [JsonSerializable(typeof(RequestWelcomeWebhookMessage))]
 [JsonSerializable(typeof(SystemWebhookMessage))]
 [JsonSerializable(typeof(WebhookSystemContent))]
+// Webhooks — inbound status payload models (PR3 of issue #8)
+[JsonSerializable(typeof(StatusesWebhookPayload))]
+[JsonSerializable(typeof(WebhookStatus))]
+[JsonSerializable(typeof(WebhookStatusValue))]
+[JsonSerializable(typeof(WebhookConversation))]
+[JsonSerializable(typeof(WebhookConversationOrigin))]
+[JsonSerializable(typeof(WebhookPricing))]
+[JsonSerializable(typeof(WebhookError))]
+[JsonSerializable(typeof(WebhookErrorData))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }
