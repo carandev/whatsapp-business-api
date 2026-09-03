@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using WhatsAppCloudApi.Models.BusinessProfile;
 using WhatsAppCloudApi.Models.Media;
 using WhatsAppCloudApi.Models.Messages;
+using WhatsAppCloudApi.Models.Messages.Interactive;
 using WhatsAppCloudApi.Models.PhoneNumbers;
 using WhatsAppCloudApi.Models.Templates;
 
@@ -96,6 +97,19 @@ namespace WhatsAppCloudApi.Serialization;
 [JsonSerializable(typeof(global::WhatsAppCloudApi.Models.BusinessProfile.BusinessProfile))]
 [JsonSerializable(typeof(BusinessProfileResponse))]
 [JsonSerializable(typeof(UpdateBusinessProfileRequest))]
+// Interactive messages — header hierarchy + reply buttons (PR1 of issue #1)
+[JsonSerializable(typeof(InteractiveHeader))]
+[JsonSerializable(typeof(TextInteractiveHeader))]
+[JsonSerializable(typeof(ImageInteractiveHeader))]
+[JsonSerializable(typeof(VideoInteractiveHeader))]
+[JsonSerializable(typeof(DocumentInteractiveHeader))]
+[JsonSerializable(typeof(InteractiveBody))]
+[JsonSerializable(typeof(InteractiveFooter))]
+[JsonSerializable(typeof(ReplyButton))]
+[JsonSerializable(typeof(ReplyButtonEnvelope))]
+[JsonSerializable(typeof(ReplyButtonsAction))]
+[JsonSerializable(typeof(ReplyButtonsInteractive))]
+[JsonSerializable(typeof(SendReplyButtonsMessageRequest))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }
