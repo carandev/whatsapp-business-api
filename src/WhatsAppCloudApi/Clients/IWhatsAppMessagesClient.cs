@@ -1,4 +1,5 @@
 using WhatsAppCloudApi.Models.Messages;
+using WhatsAppCloudApi.Models.Messages.Interactive;
 
 namespace WhatsAppCloudApi.Clients;
 
@@ -210,4 +211,32 @@ public interface IWhatsAppMessagesClient
     /// success; a failed <see cref="Result{T}"/> when the Graph API call fails.
     /// </returns>
     Task<Result<MessageResponse>> SendContactsAsync(string to, IReadOnlyList<Contact> contacts, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sends a reply-buttons interactive message via <c>POST /{phone_number_id}/messages</c>.
+    /// <paramref name="buttons"/> must contain 1-3 items. <paramref name="header"/> may be any
+    /// header kind (text, image, video, document) or omitted.
+    /// </summary>
+    /// <param name="to">The recipient's phone number, in E.164 format.</param>
+    /// <param name="bodyText">The message body text.</param>
+    /// <param name="buttons">The 1-3 reply buttons offered to the recipient.</param>
+    /// <param name="header">An optional header of any kind (text, image, video, document).</param>
+    /// <param name="footerText">Optional footer text.</param>
+    /// <param name="context">An optional reference to a prior inbound message being replied to.</param>
+    /// <param name="phoneNumberIdOverride">
+    /// An optional phone number id that takes precedence over
+    /// <see cref="WhatsAppOptions.PhoneNumberId"/> when resolving the sending identity.
+    /// </param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> wrapping the sent <see cref="MessageResponse"/> on
+    /// success; a failed <see cref="Result{T}"/> when the Graph API call fails.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="bodyText"/> is null, empty, or whitespace; or when
+    /// <paramref name="buttons"/> is null, empty, or contains more than 3 items; or when any
+    /// button's title exceeds 20 characters or id has leading/trailing whitespace. Thrown
+    /// synchronously, before any HTTP request is sent.
+    /// </exception>
+    Task<Result<MessageResponse>> SendReplyButtonsAsync(string to, string bodyText, IReadOnlyList<ReplyButton> buttons, InteractiveHeader? header = null, string? footerText = null, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default);
 }

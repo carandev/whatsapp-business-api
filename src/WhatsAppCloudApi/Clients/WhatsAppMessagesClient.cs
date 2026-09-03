@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using WhatsAppCloudApi.Models.Messages;
+using WhatsAppCloudApi.Models.Messages.Interactive;
 using WhatsAppCloudApi.Serialization;
 
 namespace WhatsAppCloudApi.Clients;
@@ -85,6 +86,13 @@ public sealed class WhatsAppMessagesClient : IWhatsAppMessagesClient
     {
         var request = new SendContactsMessageRequest(to, contacts, context);
         return SendAsync(request, WhatsAppJsonSerializerContext.Default.SendContactsMessageRequest, phoneNumberIdOverride, ct);
+    }
+
+    /// <inheritdoc />
+    public Task<Result<MessageResponse>> SendReplyButtonsAsync(string to, string bodyText, IReadOnlyList<ReplyButton> buttons, InteractiveHeader? header = null, string? footerText = null, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default)
+    {
+        var request = new SendReplyButtonsMessageRequest(to, bodyText, buttons, header, footerText, context);
+        return SendAsync(request, WhatsAppJsonSerializerContext.Default.SendReplyButtonsMessageRequest, phoneNumberIdOverride, ct);
     }
 
     private async Task<Result<MessageResponse>> SendAsync<TRequest>(TRequest request, JsonTypeInfo<TRequest> typeInfo, string? phoneNumberIdOverride, CancellationToken ct)

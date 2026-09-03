@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using WhatsAppCloudApi.Clients;
 using WhatsAppCloudApi.Models.Messages;
+using WhatsAppCloudApi.Models.Messages.Interactive;
 using WhatsAppCloudApi.Tests.Fakes;
 
 namespace WhatsAppCloudApi.Tests.Messages;
@@ -567,6 +568,115 @@ public class WhatsAppMessagesClientTests
         var result = await client.SendContactsAsync("15550001111", [new Contact()]);
 
         AssertFailure(result);
+    }
+
+    // ---------- SendReplyButtonsAsync ----------
+
+    [Fact]
+    public async Task SendReplyButtonsAsync_SendsPostWithReplyButtonsPayload_ToMessagesEndpoint()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options, _ => JsonResponse(HttpStatusCode.OK, SuccessBody));
+
+        await client.SendReplyButtonsAsync(
+            "15550001111",
+            "Pick one",
+            [new ReplyButton("id-1", "Yes"), new ReplyButton("id-2", "No")]);
+
+        Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
+        Assert.Equal(ExpectedRequestUri(options), handler.LastRequest.RequestUri!.ToString());
+        var body = await ReadRequestBodyAsync(handler.LastRequest);
+        Assert.Contains("\"type\":\"interactive\"", body, StringComparison.Ordinal);
+        Assert.Contains("\"interactive\":{\"type\":\"button\"", body, StringComparison.Ordinal);
+        Assert.Contains(
+            "\"action\":{\"buttons\":[{\"type\":\"reply\",\"reply\":{\"id\":\"id-1\",\"title\":\"Yes\"}},{\"type\":\"reply\",\"reply\":{\"id\":\"id-2\",\"title\":\"No\"}}]}",
+            body,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendReplyButtonsAsync_ReturnsSuccess_WithMessageId_On2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(options, _ => JsonResponse(HttpStatusCode.OK, SuccessBody));
+
+        var result = await client.SendReplyButtonsAsync("15550001111", "Pick one", [new ReplyButton("id-1", "Yes")]);
+
+        AssertSuccess(result);
+    }
+
+    [Fact]
+    public async Task SendReplyButtonsAsync_ReturnsFailure_WithDeserializedError_OnNon2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(options, _ => JsonResponse(HttpStatusCode.BadRequest, ErrorBody));
+
+        var result = await client.SendReplyButtonsAsync("15550001111", "Pick one", [new ReplyButton("id-1", "Yes")]);
+
+        AssertFailure(result);
+    }
+
+    [Fact]
+    public async Task SendReplyButtonsAsync_IncludesContext_WhenSupplied()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options, _ => JsonResponse(HttpStatusCode.OK, SuccessBody));
+
+        await client.SendReplyButtonsAsync(
+            "15550001111",
+            "Pick one",
+            [new ReplyButton("id-1", "Yes")],
+            context: new Context { MessageId = "wamid.prior" });
+
+        var body = await ReadRequestBodyAsync(handler.LastRequest!);
+        Assert.Contains("\"context\":{\"message_id\":\"wamid.prior\"}", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendReplyButtonsAsync_ThrowsArgumentException_AndSendsNoRequest_WhenMoreThanThreeButtonsSupplied()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options);
+
+        await Assert.ThrowsAsync<ArgumentException>(async () => await client.SendReplyButtonsAsync(
+            "15550001111",
+            "Pick one",
+            [
+                new ReplyButton("id-1", "One"),
+                new ReplyButton("id-2", "Two"),
+                new ReplyButton("id-3", "Three"),
+                new ReplyButton("id-4", "Four"),
+            ]));
+
+        Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task SendReplyButtonsAsync_ThrowsArgumentException_AndSendsNoRequest_WhenButtonTitleExceeds20Characters()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options);
+
+        await Assert.ThrowsAsync<ArgumentException>(async () => await client.SendReplyButtonsAsync(
+            "15550001111",
+            "Pick one",
+            [new ReplyButton("id-1", "This title is way too long")]));
+
+        Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task SendReplyButtonsAsync_ThrowsArgumentException_AndSendsNoRequest_WhenButtonIdHasLeadingOrTrailingWhitespace()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options);
+
+        await Assert.ThrowsAsync<ArgumentException>(async () => await client.SendReplyButtonsAsync(
+            "15550001111",
+            "Pick one",
+            [new ReplyButton(" id-1 ", "Yes")]));
+
+        Assert.Equal(0, handler.RequestCount);
     }
 
     // ---------- phoneNumberIdOverride ----------
