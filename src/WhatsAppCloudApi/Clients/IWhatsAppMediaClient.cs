@@ -3,7 +3,7 @@ using WhatsAppCloudApi.Models.Media;
 namespace WhatsAppCloudApi.Clients;
 
 /// <summary>
-/// Client for the WhatsApp Cloud API media resource (upload/download/delete media assets).
+/// Client for the WhatsApp Cloud API media resource (upload and download media assets).
 /// Upload methods resolve their target phone number id from a per-call
 /// <c>phoneNumberIdOverride</c> or, when omitted, <see cref="WhatsAppOptions.PhoneNumberId"/>.
 /// Graph API-level (HTTP 4xx/5xx) failures are reported via <see cref="Result{T}"/>, never an
