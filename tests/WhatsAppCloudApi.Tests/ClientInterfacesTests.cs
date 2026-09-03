@@ -30,7 +30,10 @@ public class ClientInterfacesTests
     [Fact]
     public void ResourceClientInterfaces_DeclareOnlyZeroOrDocumentedPlaceholderMembers()
     {
-        var resourceInterfaces = ExpectedInterfaces.Where(type => type != typeof(IWhatsAppClient) && type != typeof(IWhatsAppTemplatesClient));
+        var resourceInterfaces = ExpectedInterfaces.Where(type =>
+            type != typeof(IWhatsAppClient) &&
+            type != typeof(IWhatsAppTemplatesClient) &&
+            type != typeof(IWhatsAppMessagesClient));
 
         Assert.All(resourceInterfaces, type =>
         {
@@ -70,6 +73,31 @@ public class ClientInterfacesTests
                 nameof(IWhatsAppTemplatesClient.GetAsync),
                 nameof(IWhatsAppTemplatesClient.ListAsync),
                 nameof(IWhatsAppTemplatesClient.UpdateAsync),
+            },
+            methodNames);
+    }
+
+    [Fact]
+    public void IWhatsAppMessagesClient_DeclaresOnlyItsDocumentedSendMembers()
+    {
+        var methodNames = typeof(IWhatsAppMessagesClient)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(m => m.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            new[]
+            {
+                nameof(IWhatsAppMessagesClient.SendAudioAsync),
+                nameof(IWhatsAppMessagesClient.SendContactsAsync),
+                nameof(IWhatsAppMessagesClient.SendDocumentAsync),
+                nameof(IWhatsAppMessagesClient.SendImageAsync),
+                nameof(IWhatsAppMessagesClient.SendLocationAsync),
+                nameof(IWhatsAppMessagesClient.SendStickerAsync),
+                nameof(IWhatsAppMessagesClient.SendTemplateAsync),
+                nameof(IWhatsAppMessagesClient.SendTextAsync),
+                nameof(IWhatsAppMessagesClient.SendVideoAsync),
             },
             methodNames);
     }
