@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
+using WhatsAppCloudApi.Models.BusinessProfile;
 using WhatsAppCloudApi.Models.Media;
 using WhatsAppCloudApi.Models.Messages;
+using WhatsAppCloudApi.Models.PhoneNumbers;
 using WhatsAppCloudApi.Models.Templates;
 
 namespace WhatsAppCloudApi.Serialization;
@@ -80,6 +82,20 @@ namespace WhatsAppCloudApi.Serialization;
 [JsonSerializable(typeof(MediaUploadResponse))]
 // Media — get URL and download (PR2 of issue #6)
 [JsonSerializable(typeof(MediaUrlResponse))]
+// Phone numbers — DTOs and serializer registration (PR1 of issue #5)
+[JsonSerializable(typeof(PhoneNumber))]
+[JsonSerializable(typeof(TemplatesPage<PhoneNumber>))]
+[JsonSerializable(typeof(PhoneNumberThroughput))]
+[JsonSerializable(typeof(PhoneNumberWebhookConfiguration))]
+[JsonSerializable(typeof(PhoneNumberQualityRating))]
+[JsonSerializable(typeof(PhoneNumberNameStatus))]
+[JsonSerializable(typeof(VerificationCodeMethod))]
+[JsonSerializable(typeof(RequestVerificationCodeRequest))]
+[JsonSerializable(typeof(VerifyCodeRequest))]
+// Business profile — DTOs and serializer registration (PR1 of issue #5)
+[JsonSerializable(typeof(global::WhatsAppCloudApi.Models.BusinessProfile.BusinessProfile))]
+[JsonSerializable(typeof(BusinessProfileResponse))]
+[JsonSerializable(typeof(UpdateBusinessProfileRequest))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }
