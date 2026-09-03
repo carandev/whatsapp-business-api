@@ -78,6 +78,8 @@ namespace WhatsAppCloudApi.Serialization;
 [JsonSerializable(typeof(MessageResponse))]
 // Media — upload (PR1 of issue #6)
 [JsonSerializable(typeof(MediaUploadResponse))]
+// Media — get URL and download (PR2 of issue #6)
+[JsonSerializable(typeof(MediaUrlResponse))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }
