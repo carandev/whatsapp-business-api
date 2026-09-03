@@ -35,7 +35,8 @@ public class ClientInterfacesTests
             type != typeof(IWhatsAppTemplatesClient) &&
             type != typeof(IWhatsAppMessagesClient) &&
             type != typeof(IWhatsAppMediaClient) &&
-            type != typeof(IWhatsAppPhoneNumbersClient));
+            type != typeof(IWhatsAppPhoneNumbersClient) &&
+            type != typeof(IWhatsAppBusinessProfileClient));
 
         Assert.All(resourceInterfaces, type =>
         {
@@ -148,6 +149,24 @@ public class ClientInterfacesTests
                 nameof(IWhatsAppPhoneNumbersClient.ListPhoneNumbersAsync),
                 nameof(IWhatsAppPhoneNumbersClient.RequestVerificationCodeAsync),
                 nameof(IWhatsAppPhoneNumbersClient.VerifyCodeAsync),
+            },
+            methodNames);
+    }
+
+    [Fact]
+    public void IWhatsAppBusinessProfileClient_DeclaresOnlyItsDocumentedMembers()
+    {
+        var methodNames = typeof(IWhatsAppBusinessProfileClient)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(m => m.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            new[]
+            {
+                nameof(IWhatsAppBusinessProfileClient.GetBusinessProfileAsync),
+                nameof(IWhatsAppBusinessProfileClient.UpdateBusinessProfileAsync),
             },
             methodNames);
     }
