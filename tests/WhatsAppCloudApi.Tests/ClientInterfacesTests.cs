@@ -30,7 +30,7 @@ public class ClientInterfacesTests
     [Fact]
     public void ResourceClientInterfaces_DeclareOnlyZeroOrDocumentedPlaceholderMembers()
     {
-        var resourceInterfaces = ExpectedInterfaces.Where(type => type != typeof(IWhatsAppClient));
+        var resourceInterfaces = ExpectedInterfaces.Where(type => type != typeof(IWhatsAppClient) && type != typeof(IWhatsAppTemplatesClient));
 
         Assert.All(resourceInterfaces, type =>
         {
@@ -50,6 +50,27 @@ public class ClientInterfacesTests
 
         Assert.Equal(
             new[] { nameof(IWhatsAppClient.CreateRequest), nameof(IWhatsAppClient.CreateWabaRequest), nameof(IWhatsAppClient.SendAsync) },
+            methodNames);
+    }
+
+    [Fact]
+    public void IWhatsAppTemplatesClient_DeclaresOnlyItsDocumentedCrudMembers()
+    {
+        var methodNames = typeof(IWhatsAppTemplatesClient)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(m => m.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            new[]
+            {
+                nameof(IWhatsAppTemplatesClient.CreateAsync),
+                nameof(IWhatsAppTemplatesClient.DeleteAsync),
+                nameof(IWhatsAppTemplatesClient.GetAsync),
+                nameof(IWhatsAppTemplatesClient.ListAsync),
+                nameof(IWhatsAppTemplatesClient.UpdateAsync),
+            },
             methodNames);
     }
 }
