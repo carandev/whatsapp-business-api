@@ -113,6 +113,51 @@ public class WhatsAppOptionsTests
     }
 
     [Fact]
+    public void ValidationPassesWhenAppSecretAndWebhookVerifyTokenAreAbsent()
+    {
+        var options = new WhatsAppOptions
+        {
+            AccessToken = "test-access-token",
+            PhoneNumberId = "123456789",
+        };
+
+        var results = new List<ValidationResult>();
+        var isValid = Validator.TryValidateObject(
+            options,
+            new ValidationContext(options),
+            results,
+            validateAllProperties: true);
+
+        Assert.True(isValid);
+        Assert.Empty(results);
+        Assert.Null(options.AppSecret);
+        Assert.Null(options.WebhookVerifyToken);
+    }
+
+    [Fact]
+    public void AppSecretAndWebhookVerifyTokenBindFromConfiguration_WhenPresent()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["WhatsApp:AccessToken"] = "test-access-token",
+                ["WhatsApp:PhoneNumberId"] = "123456789",
+                ["WhatsApp:AppSecret"] = "app-secret-value",
+                ["WhatsApp:WebhookVerifyToken"] = "verify-token-value",
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddOptions<WhatsAppOptions>().Bind(configuration.GetSection(WhatsAppOptions.SectionName));
+        var provider = services.BuildServiceProvider();
+
+        var options = provider.GetRequiredService<IOptions<WhatsAppOptions>>().Value;
+
+        Assert.Equal("app-secret-value", options.AppSecret);
+        Assert.Equal("verify-token-value", options.WebhookVerifyToken);
+    }
+
+    [Fact]
     public void WabaIdBindsFromConfiguration_WhenPresent()
     {
         var configuration = new ConfigurationBuilder()

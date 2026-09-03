@@ -52,4 +52,19 @@ public sealed class WhatsAppOptions
     /// The HTTP request timeout. Not yet enforced by this scaffold; reserved for a future release.
     /// </summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// The Meta App Secret used by <see cref="WhatsAppSignatureValidator"/> to verify the
+    /// <c>X-Hub-Signature-256</c> header on inbound webhook requests. Optional — only required
+    /// when a consumer verifies webhook signatures. A missing value causes verification to fail
+    /// closed rather than fail at options-binding time.
+    /// </summary>
+    public string? AppSecret { get; set; }
+
+    /// <summary>
+    /// The verify token compared against <c>hub.verify_token</c> during the webhook GET
+    /// handshake. Optional — only required when a consumer wires up the webhook subscription
+    /// handshake.
+    /// </summary>
+    public string? WebhookVerifyToken { get; set; }
 }
