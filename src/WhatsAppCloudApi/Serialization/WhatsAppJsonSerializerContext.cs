@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using WhatsAppCloudApi.Models.Messages;
 using WhatsAppCloudApi.Models.Templates;
 
 namespace WhatsAppCloudApi.Serialization;
@@ -33,6 +34,47 @@ namespace WhatsAppCloudApi.Serialization;
 [JsonSerializable(typeof(CopyCodeButton))]
 [JsonSerializable(typeof(CatalogButton))]
 [JsonSerializable(typeof(FlowButton))]
+// Messages — foundation (PR1)
+[JsonSerializable(typeof(Context))]
+[JsonSerializable(typeof(Contact))]
+[JsonSerializable(typeof(ContactName))]
+[JsonSerializable(typeof(ContactAddress))]
+[JsonSerializable(typeof(ContactEmail))]
+[JsonSerializable(typeof(ContactPhone))]
+[JsonSerializable(typeof(ContactOrg))]
+[JsonSerializable(typeof(ContactUrl))]
+[JsonSerializable(typeof(SendMessageRequest))]
+[JsonSerializable(typeof(MediaReference))]
+// Messages — send-time template parameter hierarchy (PR2)
+[JsonSerializable(typeof(TemplateParameterComponent))]
+[JsonSerializable(typeof(HeaderParameterComponent))]
+[JsonSerializable(typeof(BodyParameterComponent))]
+[JsonSerializable(typeof(ButtonParameterComponent))]
+[JsonSerializable(typeof(TemplateParameter))]
+[JsonSerializable(typeof(TextParameter))]
+[JsonSerializable(typeof(Currency))]
+[JsonSerializable(typeof(CurrencyParameter))]
+[JsonSerializable(typeof(TemplateDateTime))]
+[JsonSerializable(typeof(DateTimeParameter))]
+[JsonSerializable(typeof(ImageParameter))]
+[JsonSerializable(typeof(DocumentParameter))]
+[JsonSerializable(typeof(VideoParameter))]
+[JsonSerializable(typeof(PayloadParameter))]
+// Messages — per-message-kind requests and response mapping (PR3)
+[JsonSerializable(typeof(SendTextMessageRequest))]
+[JsonSerializable(typeof(TextContent))]
+[JsonSerializable(typeof(SendTemplateMessageRequest))]
+[JsonSerializable(typeof(TemplateReference))]
+[JsonSerializable(typeof(LanguageCode))]
+[JsonSerializable(typeof(SendImageMessageRequest))]
+[JsonSerializable(typeof(SendDocumentMessageRequest))]
+[JsonSerializable(typeof(SendAudioMessageRequest))]
+[JsonSerializable(typeof(SendVideoMessageRequest))]
+[JsonSerializable(typeof(SendStickerMessageRequest))]
+[JsonSerializable(typeof(SendLocationMessageRequest))]
+[JsonSerializable(typeof(Location))]
+[JsonSerializable(typeof(SendContactsMessageRequest))]
+[JsonSerializable(typeof(MessageResponse))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }

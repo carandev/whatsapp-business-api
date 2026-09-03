@@ -31,6 +31,16 @@ public sealed record MediaReference
     public string? Link { get; }
 
     /// <summary>
+    /// An optional caption shown alongside the media, supported by image/document/video message
+    /// content (not by audio/sticker, and not by send-time template parameters). Set via a
+    /// <c>with</c> expression after <see cref="Create"/>; omitted from the payload when
+    /// <see langword="null"/>.
+    /// </summary>
+    [JsonPropertyName("caption")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Caption { get; init; }
+
+    /// <summary>
     /// Creates a <see cref="MediaReference"/>, validating that exactly one of
     /// <paramref name="mediaId"/> or <paramref name="link"/> is supplied.
     /// </summary>

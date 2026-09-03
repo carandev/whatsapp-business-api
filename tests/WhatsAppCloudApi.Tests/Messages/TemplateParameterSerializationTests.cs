@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using WhatsAppCloudApi.Models.Messages;
+using WhatsAppCloudApi.Serialization;
 
 namespace WhatsAppCloudApi.Tests.Messages;
 
@@ -11,14 +12,27 @@ namespace WhatsAppCloudApi.Tests.Messages;
 /// definition-time shape.
 /// </summary>
 /// <remarks>
-/// Uses plain reflection-based <see cref="JsonSerializer"/> (no source-generated
-/// <c>WhatsAppJsonSerializerContext</c>): <c>[JsonPolymorphic]</c>/<c>[JsonDerivedType]</c>
-/// serialize correctly under the reflection-based serializer without source-gen registration, so
-/// this hierarchy does not need to be added to the context until the later PR that registers all
-/// of PR3's per-message-kind request types alongside it.
+/// Most cases below use plain reflection-based <see cref="JsonSerializer"/> — established in PR2
+/// before this hierarchy was registered on <see cref="WhatsAppJsonSerializerContext"/>.
+/// <c>[JsonPolymorphic]</c>/<c>[JsonDerivedType]</c> serialize identically under both the
+/// reflection-based serializer and the source-generated context; see
+/// <see cref="HeaderParameterComponent_ThroughGeneratedSerializerContext_MatchesReflectionOutput"/>
+/// for confirmation now that Phase 6 has registered this hierarchy.
 /// </remarks>
 public class TemplateParameterSerializationTests
 {
+    [Fact]
+    public void HeaderParameterComponent_ThroughGeneratedSerializerContext_MatchesReflectionOutput()
+    {
+        var component = new HeaderParameterComponent([new ImageParameter(mediaId: "2:c2FtcGxl")]);
+
+        var reflectionJson = JsonSerializer.Serialize<TemplateParameterComponent>(component);
+        var sourceGenJson = JsonSerializer.Serialize<TemplateParameterComponent>(
+            component, WhatsAppJsonSerializerContext.Default.TemplateParameterComponent);
+
+        AssertJsonEquals(reflectionJson, sourceGenJson);
+    }
+
     [Fact]
     public void HeaderParameterComponent_WithImageParameter_MatchesMetaDocumentedShape()
     {
