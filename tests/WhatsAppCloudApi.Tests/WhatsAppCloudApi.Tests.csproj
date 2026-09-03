@@ -26,4 +26,8 @@
     <ProjectReference Include="..\..\src\WhatsAppCloudApi.Extensions.DependencyInjection\WhatsAppCloudApi.Extensions.DependencyInjection.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Webhooks\TestData\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

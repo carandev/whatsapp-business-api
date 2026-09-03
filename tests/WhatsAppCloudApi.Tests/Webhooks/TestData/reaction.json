@@ -1,0 +1,10 @@
+{
+  "from": "16315551234",
+  "id": "wamid.ID_REACTION",
+  "timestamp": "1603059212",
+  "type": "reaction",
+  "reaction": {
+    "message_id": "wamid.REACTED_TO_MESSAGE",
+    "emoji": "👍"
+  }
+}

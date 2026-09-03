@@ -1,0 +1,13 @@
+{
+  "from": "16315551234",
+  "id": "wamid.ID_INTERACTIVE_BUTTON",
+  "timestamp": "1603059210",
+  "type": "interactive",
+  "interactive": {
+    "type": "button_reply",
+    "button_reply": {
+      "id": "unique-button-id",
+      "title": "Confirm"
+    }
+  }
+}
