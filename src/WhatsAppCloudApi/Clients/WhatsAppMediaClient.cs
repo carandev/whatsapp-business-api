@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using WhatsAppCloudApi.Models.Media;
 using WhatsAppCloudApi.Serialization;
 
@@ -74,6 +75,51 @@ public sealed class WhatsAppMediaClient : IWhatsAppMediaClient
         return await UploadAsync(stream, mimeType, effectiveFilename, phoneNumberIdOverride, ct).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
+    public async Task<Result<MediaUrlResponse>> GetMediaUrlAsync(string mediaId, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(mediaId);
+
+        var httpRequest = _client.CreateRequest(HttpMethod.Get, mediaId);
+
+        var response = await _client.SendAsync(httpRequest, ct).ConfigureAwait(false);
+        return await ReadResultAsync(response, WhatsAppJsonSerializerContext.Default.MediaUrlResponse, ct).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<Stream>> DownloadAsync(string url, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+
+        var httpRequest = _client.CreateAbsoluteRequest(HttpMethod.Get, new Uri(url, UriKind.Absolute));
+
+        var response = await _client.SendAsync(httpRequest, ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            return Result<Stream>.Failure(await ReadErrorAsync(response, ct).ConfigureAwait(false));
+        }
+
+        var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        return Result<Stream>.Success(stream);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<byte[]>> DownloadBytesAsync(string url, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+
+        var httpRequest = _client.CreateAbsoluteRequest(HttpMethod.Get, new Uri(url, UriKind.Absolute));
+
+        var response = await _client.SendAsync(httpRequest, ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            return Result<byte[]>.Failure(await ReadErrorAsync(response, ct).ConfigureAwait(false));
+        }
+
+        var bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+        return Result<byte[]>.Success(bytes);
+    }
+
     /// <summary>
     /// Validates <paramref name="content"/> against the MIME-category size ceiling for
     /// <paramref name="mimeType"/>, before any HTTP request is built. Seekable streams are
@@ -143,6 +189,18 @@ public sealed class WhatsAppMediaClient : IWhatsAppMediaClient
         }
 
         return Result<MediaUploadResponse>.Failure(await ReadErrorAsync(response, ct).ConfigureAwait(false));
+    }
+
+    private static async Task<Result<T>> ReadResultAsync<T>(HttpResponseMessage response, JsonTypeInfo<T> typeInfo, CancellationToken ct)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            var value = await JsonSerializer.DeserializeAsync(stream, typeInfo, ct).ConfigureAwait(false);
+            return Result<T>.Success(value!);
+        }
+
+        return Result<T>.Failure(await ReadErrorAsync(response, ct).ConfigureAwait(false));
     }
 
     private static async Task<WhatsAppError> ReadErrorAsync(HttpResponseMessage response, CancellationToken ct)

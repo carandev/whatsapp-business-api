@@ -64,13 +64,25 @@ public class ClientInterfacesTests
     }
 
     [Fact]
-    public void IWhatsAppMediaClient_DeclaresOnlyItsDocumentedUploadOverloads()
+    public void IWhatsAppMediaClient_DeclaresOnlyItsDocumentedMembers()
     {
-        var methods = typeof(IWhatsAppMediaClient)
-            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+        var methodNames = typeof(IWhatsAppMediaClient)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(m => m.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
 
-        Assert.Equal(3, methods.Length);
-        Assert.All(methods, m => Assert.Equal(nameof(IWhatsAppMediaClient.UploadAsync), m.Name));
+        Assert.Equal(
+            new[]
+            {
+                nameof(IWhatsAppMediaClient.DownloadAsync),
+                nameof(IWhatsAppMediaClient.DownloadBytesAsync),
+                nameof(IWhatsAppMediaClient.GetMediaUrlAsync),
+                nameof(IWhatsAppMediaClient.UploadAsync),
+                nameof(IWhatsAppMediaClient.UploadAsync),
+                nameof(IWhatsAppMediaClient.UploadAsync),
+            },
+            methodNames);
     }
 
     [Fact]

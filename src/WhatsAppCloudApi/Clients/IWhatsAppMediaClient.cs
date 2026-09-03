@@ -8,8 +8,10 @@ namespace WhatsAppCloudApi.Clients;
 /// <c>phoneNumberIdOverride</c> or, when omitted, <see cref="WhatsAppOptions.PhoneNumberId"/>.
 /// Graph API-level (HTTP 4xx/5xx) failures are reported via <see cref="Result{T}"/>, never an
 /// exception. Local size validation failures throw <see cref="MediaSizeExceededException"/>
-/// synchronously, before any HTTP request is sent. Additional members (get URL, download) will be
-/// added in a future release.
+/// synchronously, before any HTTP request is sent. <see cref="GetMediaUrlAsync"/> resolves a media
+/// id to a short-lived CDN URL; <see cref="DownloadAsync"/> and <see cref="DownloadBytesAsync"/>
+/// download that URL's content using the same underlying <see cref="HttpClient"/>, with an
+/// absolute-URI request built via <see cref="IWhatsAppClient.CreateAbsoluteRequest"/>.
 /// </summary>
 public interface IWhatsAppMediaClient
 {
@@ -104,4 +106,46 @@ public interface IWhatsAppMediaClient
     /// category. Thrown before any HTTP request is sent.
     /// </exception>
     Task<Result<MediaUploadResponse>> UploadAsync(string filePath, string mimeType, string? filename = null, string? phoneNumberIdOverride = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Resolves a media id to a short-lived, downloadable CDN URL via <c>GET /{media-id}</c>. This
+    /// endpoint is not phone-number-scoped.
+    /// </summary>
+    /// <param name="mediaId">The Meta-assigned media identifier to resolve.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> wrapping the resolved <see cref="MediaUrlResponse"/> on
+    /// success; a failed <see cref="Result{T}"/> when the media id is unknown or the API call
+    /// fails.
+    /// </returns>
+    Task<Result<MediaUrlResponse>> GetMediaUrlAsync(string mediaId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Downloads media content from an absolute CDN <paramref name="url"/>, as returned by
+    /// <see cref="GetMediaUrlAsync"/>. Builds the request via
+    /// <see cref="IWhatsAppClient.CreateAbsoluteRequest"/>, which attaches the same
+    /// <c>Authorization: Bearer</c> header used for other Graph API calls and overrides the
+    /// client's relative-path base address behavior.
+    /// </summary>
+    /// <param name="url">The absolute CDN URL to download from.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> wrapping a <see cref="Stream"/> the caller is
+    /// responsible for disposing; a failed <see cref="Result{T}"/> when the download fails.
+    /// </returns>
+    Task<Result<Stream>> DownloadAsync(string url, CancellationToken ct = default);
+
+    /// <summary>
+    /// Downloads media content from an absolute CDN <paramref name="url"/>, as returned by
+    /// <see cref="GetMediaUrlAsync"/>, buffering the full response into memory. Uses the same
+    /// absolute-URI, same-<see cref="HttpClient"/>, Bearer-auth mechanism as
+    /// <see cref="DownloadAsync"/>.
+    /// </summary>
+    /// <param name="url">The absolute CDN URL to download from.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> wrapping the downloaded content as a <c>byte[]</c>; a
+    /// failed <see cref="Result{T}"/> when the download fails.
+    /// </returns>
+    Task<Result<byte[]>> DownloadBytesAsync(string url, CancellationToken ct = default);
 }

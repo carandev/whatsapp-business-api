@@ -367,4 +367,186 @@ public class WhatsAppMediaClientTests
 
         Assert.Equal(0, handler.RequestCount);
     }
+
+    // ---------- GetMediaUrlAsync ----------
+
+    [Fact]
+    public async Task GetMediaUrlAsync_SendsGetToMediaIdPath_WithNoPhoneNumberIdSubstitution()
+    {
+        var options = CreateOptions();
+        const string mediaJson = """{"url":"https://cdn.example.com/media/abc","mime_type":"image/jpeg","sha256":"deadbeef","file_size":123,"id":"media-id-1"}""";
+        var (client, handler) = CreateClient(
+            options,
+            _ => JsonResponse(HttpStatusCode.OK, mediaJson));
+
+        await client.GetMediaUrlAsync("media-id-1");
+
+        Assert.Equal(HttpMethod.Get, handler.LastRequest!.Method);
+        Assert.Equal(ExpectedRequestUri(options, "media-id-1"), handler.LastRequest.RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task GetMediaUrlAsync_ReturnsSuccessResult_WithDeserializedFields_On2xxResponse()
+    {
+        var options = CreateOptions();
+        const string mediaJson = """{"url":"https://cdn.example.com/media/abc","mime_type":"image/jpeg","sha256":"deadbeef","file_size":123,"id":"media-id-1"}""";
+        var (client, _) = CreateClient(
+            options,
+            _ => JsonResponse(HttpStatusCode.OK, mediaJson));
+
+        var result = await client.GetMediaUrlAsync("media-id-1");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("https://cdn.example.com/media/abc", result.Value!.Url);
+        Assert.Equal("image/jpeg", result.Value.MimeType);
+        Assert.Equal("deadbeef", result.Value.Sha256);
+        Assert.Equal(123, result.Value.FileSize);
+        Assert.Equal("media-id-1", result.Value.Id);
+    }
+
+    [Fact]
+    public async Task GetMediaUrlAsync_ReturnsFailureResult_WithDeserializedError_OnNon2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(
+            options,
+            _ => JsonResponse(HttpStatusCode.NotFound, """{"error":{"message":"Unsupported get request","type":"GraphMethodException","code":100}}"""));
+
+        var result = await client.GetMediaUrlAsync("unknown-media-id");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Unsupported get request", result.Error!.Message);
+        Assert.Equal("GraphMethodException", result.Error.Type);
+        Assert.Equal(100, result.Error.Code);
+    }
+
+    // ---------- DownloadAsync / DownloadBytesAsync ----------
+
+    private const string CdnUrl = "https://lookaside.fbsbx.com/whatsapp_business/attachments/?token=xyz";
+    private static readonly byte[] DownloadBytes = [10, 20, 30, 40, 50];
+
+    [Fact]
+    public async Task DownloadAsync_SendsRequest_ToTheExactAbsoluteUrl_NotTheConfiguredBaseAddress()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(
+            options,
+            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(DownloadBytes) });
+
+        await client.DownloadAsync(CdnUrl);
+
+        Assert.Equal(HttpMethod.Get, handler.LastRequest!.Method);
+        Assert.Equal(CdnUrl, handler.LastRequest.RequestUri!.ToString());
+        Assert.Equal("lookaside.fbsbx.com", handler.LastRequest.RequestUri.Host);
+        Assert.NotEqual("graph.facebook.com", handler.LastRequest.RequestUri.Host);
+    }
+
+    [Fact]
+    public async Task DownloadAsync_AttachesBearerAuthorizationHeader()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(
+            options,
+            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(DownloadBytes) });
+
+        await client.DownloadAsync(CdnUrl);
+
+        Assert.NotNull(handler.LastRequest!.Headers.Authorization);
+        Assert.Equal("Bearer", handler.LastRequest.Headers.Authorization!.Scheme);
+        Assert.Equal(options.AccessToken, handler.LastRequest.Headers.Authorization.Parameter);
+    }
+
+    [Fact]
+    public async Task DownloadAsync_ReturnsSuccessResult_WithStream_MatchingResponseBody_On2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(
+            options,
+            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(DownloadBytes) });
+
+        var result = await client.DownloadAsync(CdnUrl);
+
+        Assert.True(result.IsSuccess);
+        using var stream = result.Value!;
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer);
+        Assert.Equal(DownloadBytes, buffer.ToArray());
+    }
+
+    [Fact]
+    public async Task DownloadAsync_ReturnsFailureResult_WithDeserializedError_OnNon2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(
+            options,
+            _ => JsonResponse(HttpStatusCode.Forbidden, """{"error":{"message":"Media is no longer available","type":"OAuthException","code":10}}"""));
+
+        var result = await client.DownloadAsync(CdnUrl);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Media is no longer available", result.Error!.Message);
+        Assert.Equal("OAuthException", result.Error.Type);
+        Assert.Equal(10, result.Error.Code);
+    }
+
+    [Fact]
+    public async Task DownloadBytesAsync_SendsRequest_ToTheExactAbsoluteUrl_NotTheConfiguredBaseAddress()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(
+            options,
+            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(DownloadBytes) });
+
+        await client.DownloadBytesAsync(CdnUrl);
+
+        Assert.Equal(HttpMethod.Get, handler.LastRequest!.Method);
+        Assert.Equal(CdnUrl, handler.LastRequest.RequestUri!.ToString());
+        Assert.Equal("lookaside.fbsbx.com", handler.LastRequest.RequestUri.Host);
+        Assert.NotEqual("graph.facebook.com", handler.LastRequest.RequestUri.Host);
+    }
+
+    [Fact]
+    public async Task DownloadBytesAsync_AttachesBearerAuthorizationHeader()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(
+            options,
+            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(DownloadBytes) });
+
+        await client.DownloadBytesAsync(CdnUrl);
+
+        Assert.NotNull(handler.LastRequest!.Headers.Authorization);
+        Assert.Equal("Bearer", handler.LastRequest.Headers.Authorization!.Scheme);
+        Assert.Equal(options.AccessToken, handler.LastRequest.Headers.Authorization.Parameter);
+    }
+
+    [Fact]
+    public async Task DownloadBytesAsync_ReturnsSuccessResult_WithBytes_MatchingResponseBody_On2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(
+            options,
+            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(DownloadBytes) });
+
+        var result = await client.DownloadBytesAsync(CdnUrl);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(DownloadBytes, result.Value);
+    }
+
+    [Fact]
+    public async Task DownloadBytesAsync_ReturnsFailureResult_WithDeserializedError_OnNon2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(
+            options,
+            _ => JsonResponse(HttpStatusCode.Forbidden, """{"error":{"message":"Media is no longer available","type":"OAuthException","code":10}}"""));
+
+        var result = await client.DownloadBytesAsync(CdnUrl);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Media is no longer available", result.Error!.Message);
+        Assert.Equal("OAuthException", result.Error.Type);
+        Assert.Equal(10, result.Error.Code);
+    }
 }
