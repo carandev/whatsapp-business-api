@@ -95,6 +95,20 @@ public sealed class WhatsAppMessagesClient : IWhatsAppMessagesClient
         return SendAsync(request, WhatsAppJsonSerializerContext.Default.SendReplyButtonsMessageRequest, phoneNumberIdOverride, ct);
     }
 
+    /// <inheritdoc />
+    public Task<Result<MessageResponse>> SendListMessageAsync(string to, string bodyText, string buttonLabel, IReadOnlyList<ListSection> sections, string? headerText = null, string? footerText = null, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default)
+    {
+        var request = new SendListMessageRequest(to, bodyText, buttonLabel, sections, headerText, footerText, context);
+        return SendAsync(request, WhatsAppJsonSerializerContext.Default.SendListMessageRequest, phoneNumberIdOverride, ct);
+    }
+
+    /// <inheritdoc />
+    public Task<Result<MessageResponse>> SendCtaUrlButtonAsync(string to, string bodyText, string displayText, string url, InteractiveHeader? header = null, string? footerText = null, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default)
+    {
+        var request = new SendCtaUrlMessageRequest(to, bodyText, displayText, url, header, footerText, context);
+        return SendAsync(request, WhatsAppJsonSerializerContext.Default.SendCtaUrlMessageRequest, phoneNumberIdOverride, ct);
+    }
+
     private async Task<Result<MessageResponse>> SendAsync<TRequest>(TRequest request, JsonTypeInfo<TRequest> typeInfo, string? phoneNumberIdOverride, CancellationToken ct)
     {
         var httpRequest = _client.CreateRequest(HttpMethod.Post, MessagesPathTemplate, phoneNumberIdOverride);

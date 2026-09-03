@@ -679,6 +679,202 @@ public class WhatsAppMessagesClientTests
         Assert.Equal(0, handler.RequestCount);
     }
 
+    // ---------- SendListMessageAsync ----------
+
+    [Fact]
+    public async Task SendListMessageAsync_SendsPostWithListPayload_ToMessagesEndpoint()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options, _ => JsonResponse(HttpStatusCode.OK, SuccessBody));
+
+        await client.SendListMessageAsync(
+            "15550001111",
+            "Pick one",
+            "Open list",
+            [new ListSection("Section 1", [new ListRow("row-1", "Row one", "First row")])]);
+
+        Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
+        Assert.Equal(ExpectedRequestUri(options), handler.LastRequest.RequestUri!.ToString());
+        var body = await ReadRequestBodyAsync(handler.LastRequest);
+        Assert.Contains("\"type\":\"interactive\"", body, StringComparison.Ordinal);
+        Assert.Contains("\"interactive\":{\"type\":\"list\"", body, StringComparison.Ordinal);
+        Assert.Contains(
+            "\"action\":{\"button\":\"Open list\",\"sections\":[{\"title\":\"Section 1\",\"rows\":[{\"id\":\"row-1\",\"title\":\"Row one\",\"description\":\"First row\"}]}]}",
+            body,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendListMessageAsync_ReturnsSuccess_WithMessageId_On2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(options, _ => JsonResponse(HttpStatusCode.OK, SuccessBody));
+
+        var result = await client.SendListMessageAsync(
+            "15550001111",
+            "Pick one",
+            "Open list",
+            [new ListSection("Section 1", [new ListRow("row-1", "Row one", "First row")])]);
+
+        AssertSuccess(result);
+    }
+
+    [Fact]
+    public async Task SendListMessageAsync_ReturnsFailure_WithDeserializedError_OnNon2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(options, _ => JsonResponse(HttpStatusCode.BadRequest, ErrorBody));
+
+        var result = await client.SendListMessageAsync(
+            "15550001111",
+            "Pick one",
+            "Open list",
+            [new ListSection("Section 1", [new ListRow("row-1", "Row one", "First row")])]);
+
+        AssertFailure(result);
+    }
+
+    [Fact]
+    public async Task SendListMessageAsync_IncludesContext_WhenSupplied()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options, _ => JsonResponse(HttpStatusCode.OK, SuccessBody));
+
+        await client.SendListMessageAsync(
+            "15550001111",
+            "Pick one",
+            "Open list",
+            [new ListSection("Section 1", [new ListRow("row-1", "Row one", "First row")])],
+            context: new Context { MessageId = "wamid.prior" });
+
+        var body = await ReadRequestBodyAsync(handler.LastRequest!);
+        Assert.Contains("\"context\":{\"message_id\":\"wamid.prior\"}", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendListMessageAsync_ThrowsArgumentException_AndSendsNoRequest_WhenSectionsIsEmpty()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options);
+
+        await Assert.ThrowsAsync<ArgumentException>(async () => await client.SendListMessageAsync(
+            "15550001111",
+            "Pick one",
+            "Open list",
+            []));
+
+        Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task SendListMessageAsync_ThrowsArgumentException_AndSendsNoRequest_WhenButtonLabelIsWhitespace()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options);
+
+        await Assert.ThrowsAsync<ArgumentException>(async () => await client.SendListMessageAsync(
+            "15550001111",
+            "Pick one",
+            "   ",
+            [new ListSection("Section 1", [new ListRow("row-1", "Row one", "First row")])]));
+
+        Assert.Equal(0, handler.RequestCount);
+    }
+
+    // ---------- SendCtaUrlButtonAsync ----------
+
+    [Fact]
+    public async Task SendCtaUrlButtonAsync_SendsPostWithCtaUrlPayload_ToMessagesEndpoint()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options, _ => JsonResponse(HttpStatusCode.OK, SuccessBody));
+
+        await client.SendCtaUrlButtonAsync(
+            "15550001111",
+            "Check this out",
+            "Visit site",
+            "https://example.test/");
+
+        Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
+        Assert.Equal(ExpectedRequestUri(options), handler.LastRequest.RequestUri!.ToString());
+        var body = await ReadRequestBodyAsync(handler.LastRequest);
+        Assert.Contains("\"type\":\"interactive\"", body, StringComparison.Ordinal);
+        Assert.Contains("\"interactive\":{\"type\":\"cta_url\"", body, StringComparison.Ordinal);
+        Assert.Contains(
+            "\"action\":{\"name\":\"cta_url\",\"parameters\":{\"display_text\":\"Visit site\",\"url\":\"https://example.test/\"}}",
+            body,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendCtaUrlButtonAsync_ReturnsSuccess_WithMessageId_On2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(options, _ => JsonResponse(HttpStatusCode.OK, SuccessBody));
+
+        var result = await client.SendCtaUrlButtonAsync("15550001111", "Check this out", "Visit site", "https://example.test/");
+
+        AssertSuccess(result);
+    }
+
+    [Fact]
+    public async Task SendCtaUrlButtonAsync_ReturnsFailure_WithDeserializedError_OnNon2xxResponse()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(options, _ => JsonResponse(HttpStatusCode.BadRequest, ErrorBody));
+
+        var result = await client.SendCtaUrlButtonAsync("15550001111", "Check this out", "Visit site", "https://example.test/");
+
+        AssertFailure(result);
+    }
+
+    [Fact]
+    public async Task SendCtaUrlButtonAsync_IncludesContext_WhenSupplied()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options, _ => JsonResponse(HttpStatusCode.OK, SuccessBody));
+
+        await client.SendCtaUrlButtonAsync(
+            "15550001111",
+            "Check this out",
+            "Visit site",
+            "https://example.test/",
+            context: new Context { MessageId = "wamid.prior" });
+
+        var body = await ReadRequestBodyAsync(handler.LastRequest!);
+        Assert.Contains("\"context\":{\"message_id\":\"wamid.prior\"}", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendCtaUrlButtonAsync_ThrowsArgumentException_AndSendsNoRequest_WhenDisplayTextIsWhitespace()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options);
+
+        await Assert.ThrowsAsync<ArgumentException>(async () => await client.SendCtaUrlButtonAsync(
+            "15550001111",
+            "Check this out",
+            "   ",
+            "https://example.test/"));
+
+        Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task SendCtaUrlButtonAsync_ThrowsArgumentException_AndSendsNoRequest_WhenUrlIsWhitespace()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(options);
+
+        await Assert.ThrowsAsync<ArgumentException>(async () => await client.SendCtaUrlButtonAsync(
+            "15550001111",
+            "Check this out",
+            "Visit site",
+            "   "));
+
+        Assert.Equal(0, handler.RequestCount);
+    }
+
     // ---------- phoneNumberIdOverride ----------
 
     [Fact]

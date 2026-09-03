@@ -122,8 +122,10 @@ public class ClientInterfacesTests
             {
                 nameof(IWhatsAppMessagesClient.SendAudioAsync),
                 nameof(IWhatsAppMessagesClient.SendContactsAsync),
+                nameof(IWhatsAppMessagesClient.SendCtaUrlButtonAsync),
                 nameof(IWhatsAppMessagesClient.SendDocumentAsync),
                 nameof(IWhatsAppMessagesClient.SendImageAsync),
+                nameof(IWhatsAppMessagesClient.SendListMessageAsync),
                 nameof(IWhatsAppMessagesClient.SendLocationAsync),
                 nameof(IWhatsAppMessagesClient.SendReplyButtonsAsync),
                 nameof(IWhatsAppMessagesClient.SendStickerAsync),

@@ -239,4 +239,61 @@ public interface IWhatsAppMessagesClient
     /// synchronously, before any HTTP request is sent.
     /// </exception>
     Task<Result<MessageResponse>> SendReplyButtonsAsync(string to, string bodyText, IReadOnlyList<ReplyButton> buttons, InteractiveHeader? header = null, string? footerText = null, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sends a list interactive message via <c>POST /{phone_number_id}/messages</c>.
+    /// <paramref name="sections"/> must contain 1 or more items, and each section must contain 1 or
+    /// more rows. <paramref name="headerText"/> is a plain <see cref="string"/>, not an
+    /// <see cref="InteractiveHeader"/> — Meta only permits text headers on list messages, so there
+    /// is no representable way to pass an image, video, or document header through this method.
+    /// </summary>
+    /// <param name="to">The recipient's phone number, in E.164 format.</param>
+    /// <param name="bodyText">The message body text.</param>
+    /// <param name="buttonLabel">The label of the button that opens the list.</param>
+    /// <param name="sections">The list's sections, each with a title and 1 or more rows.</param>
+    /// <param name="headerText">Optional header text.</param>
+    /// <param name="footerText">Optional footer text.</param>
+    /// <param name="context">An optional reference to a prior inbound message being replied to.</param>
+    /// <param name="phoneNumberIdOverride">
+    /// An optional phone number id that takes precedence over
+    /// <see cref="WhatsAppOptions.PhoneNumberId"/> when resolving the sending identity.
+    /// </param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> wrapping the sent <see cref="MessageResponse"/> on
+    /// success; a failed <see cref="Result{T}"/> when the Graph API call fails.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="bodyText"/> or <paramref name="buttonLabel"/> is null, empty,
+    /// or whitespace; or when <paramref name="sections"/> is null or empty; or when any section's
+    /// title/rows are invalid. Thrown synchronously, before any HTTP request is sent.
+    /// </exception>
+    Task<Result<MessageResponse>> SendListMessageAsync(string to, string bodyText, string buttonLabel, IReadOnlyList<ListSection> sections, string? headerText = null, string? footerText = null, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sends a CTA-URL interactive message via <c>POST /{phone_number_id}/messages</c>.
+    /// <paramref name="header"/> may be any header kind (text, image, video, document) or omitted.
+    /// </summary>
+    /// <param name="to">The recipient's phone number, in E.164 format.</param>
+    /// <param name="bodyText">The message body text.</param>
+    /// <param name="displayText">The button's user-facing label.</param>
+    /// <param name="url">The URL opened when the recipient taps the button.</param>
+    /// <param name="header">An optional header of any kind (text, image, video, document).</param>
+    /// <param name="footerText">Optional footer text.</param>
+    /// <param name="context">An optional reference to a prior inbound message being replied to.</param>
+    /// <param name="phoneNumberIdOverride">
+    /// An optional phone number id that takes precedence over
+    /// <see cref="WhatsAppOptions.PhoneNumberId"/> when resolving the sending identity.
+    /// </param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> wrapping the sent <see cref="MessageResponse"/> on
+    /// success; a failed <see cref="Result{T}"/> when the Graph API call fails.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="bodyText"/>, <paramref name="displayText"/>, or
+    /// <paramref name="url"/> is null, empty, or whitespace. Thrown synchronously, before any HTTP
+    /// request is sent.
+    /// </exception>
+    Task<Result<MessageResponse>> SendCtaUrlButtonAsync(string to, string bodyText, string displayText, string url, InteractiveHeader? header = null, string? footerText = null, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default);
 }
