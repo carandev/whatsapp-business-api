@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using WhatsAppCloudApi.Models.Media;
 using WhatsAppCloudApi.Models.Messages;
 using WhatsAppCloudApi.Models.Templates;
 
@@ -75,6 +76,8 @@ namespace WhatsAppCloudApi.Serialization;
 [JsonSerializable(typeof(Location))]
 [JsonSerializable(typeof(SendContactsMessageRequest))]
 [JsonSerializable(typeof(MessageResponse))]
+// Media — upload (PR1 of issue #6)
+[JsonSerializable(typeof(MediaUploadResponse))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }
