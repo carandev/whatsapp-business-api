@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using WhatsAppCloudApi.Resilience;
 
 namespace WhatsAppCloudApi.Serialization;
 
@@ -48,4 +49,25 @@ public sealed class WhatsAppError
     /// </summary>
     [JsonPropertyName("fbtrace_id")]
     public string? FbtraceId { get; set; }
+
+    /// <summary>
+    /// A short, user-facing error title suitable for display, when provided by Meta.
+    /// </summary>
+    [JsonPropertyName("error_user_title")]
+    public string? ErrorUserTitle { get; set; }
+
+    /// <summary>
+    /// A user-facing error message suitable for display, when provided by Meta.
+    /// </summary>
+    [JsonPropertyName("error_user_msg")]
+    public string? ErrorUserMsg { get; set; }
+
+    /// <summary>
+    /// Whether this error is considered transient (safe to retry) based on <see cref="Code"/> and
+    /// <see cref="ErrorSubcode"/>. Reuses <see cref="Code"/>'s dual Graph-error/HTTP-status meaning:
+    /// callers that only have a raw HTTP status (no structured JSON body) store it in <see cref="Code"/>.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsTransient =>
+        TransientErrorClassifier.IsTransientGraphError(Code, ErrorSubcode) || Code is >= 500 and <= 599;
 }

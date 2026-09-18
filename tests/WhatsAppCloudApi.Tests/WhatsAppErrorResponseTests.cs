@@ -36,4 +36,40 @@ public class WhatsAppErrorResponseTests
         Assert.Equal(deserialized.Error.Message, roundTripped!.Error!.Message);
         Assert.Equal(deserialized.Error.Code, roundTripped.Error.Code);
     }
+
+    [Fact]
+    public void Deserializes_ErrorUserTitleAndErrorUserMsg_FromFullEnvelope()
+    {
+        const string json = """
+            {
+              "error": {
+                "message": "Invalid parameter",
+                "type": "OAuthException",
+                "code": 100,
+                "error_subcode": 2018001,
+                "error_user_title": "Invalid Parameter",
+                "error_user_msg": "The template parameter you provided is invalid.",
+                "fbtrace_id": "AbCdEfGhIjK"
+              }
+            }
+            """;
+
+        var deserialized = JsonSerializer.Deserialize(json, WhatsAppJsonSerializerContext.Default.WhatsAppErrorResponse);
+
+        Assert.NotNull(deserialized?.Error);
+        Assert.Equal("Invalid Parameter", deserialized!.Error!.ErrorUserTitle);
+        Assert.Equal("The template parameter you provided is invalid.", deserialized.Error.ErrorUserMsg);
+    }
+
+    [Theory]
+    [InlineData(503, null, true)]
+    [InlineData(80007, null, true)]
+    [InlineData(100, 131048, true)]
+    [InlineData(400, 2018001, false)]
+    public void IsTransient_DelegatesToTransientErrorClassifier(int code, int? subcode, bool expectedTransient)
+    {
+        var error = new WhatsAppError { Code = code, ErrorSubcode = subcode };
+
+        Assert.Equal(expectedTransient, error.IsTransient);
+    }
 }
