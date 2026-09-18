@@ -1,8 +1,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
+using Polly;
 using WhatsAppCloudApi;
 using WhatsAppCloudApi.Clients;
+using WhatsAppCloudApi.Extensions.DependencyInjection.Resilience;
 
 namespace WhatsAppCloudApi.Extensions.DependencyInjection;
 
@@ -34,6 +37,26 @@ public static class ServiceCollectionExtensions
         {
             var options = provider.GetRequiredService<IOptions<WhatsAppOptions>>().Value;
             httpClient.BaseAddress = new Uri(string.Format(options.BaseUrl, options.ApiVersion));
+        })
+        .AddResilienceHandler("whatsapp-retry", (builder, context) =>
+        {
+            var options = context.ServiceProvider.GetRequiredService<IOptions<WhatsAppOptions>>().Value;
+
+            builder.AddRetry(new HttpRetryStrategyOptions
+            {
+                MaxRetryAttempts = options.MaxRetries,
+                BackoffType = DelayBackoffType.Exponential,
+                UseJitter = true,
+                // A short starting backoff — Meta's rate-limit/transient-error windows are typically
+                // measured in hundreds of milliseconds to a few seconds, and a short base delay keeps
+                // total request latency reasonable while a real Retry-After header (see below) or
+                // exponential growth on subsequent attempts still provides real backpressure.
+                Delay = TimeSpan.FromMilliseconds(250),
+                // ShouldRetryAfterHeader defaults to true, so the built-in DelayGenerator already
+                // honors a Retry-After header when present and falls back to the exponential+jitter
+                // backoff above otherwise — no custom DelayGenerator needed.
+                ShouldHandle = args => WhatsAppRetryPredicate.ShouldRetryAsync(args.Outcome.Result, args.Outcome.Exception, args.Context.CancellationToken),
+            });
         });
 
         services.AddTransient<IWhatsAppMessagesClient, WhatsAppMessagesClient>();

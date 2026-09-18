@@ -1,8 +1,14 @@
+using System.Globalization;
+using System.Net;
+using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using WhatsAppCloudApi.Clients;
 using WhatsAppCloudApi.Extensions.DependencyInjection;
+using WhatsAppCloudApi.Extensions.DependencyInjection.Resilience;
+using WhatsAppCloudApi.Serialization;
+using WhatsAppCloudApi.Tests.Fakes;
 
 namespace WhatsAppCloudApi.Tests;
 
@@ -22,6 +28,35 @@ public class ServiceCollectionExtensionsTests
 
         var services = new ServiceCollection();
         services.AddWhatsAppCloudApi(configuration);
+        return services.BuildServiceProvider();
+    }
+
+    /// <summary>
+    /// Builds a fully DI-wired provider (options + typed client + "whatsapp-retry" resilience
+    /// pipeline registered by <see cref="ServiceCollectionExtensions.AddWhatsAppCloudApi"/>), then
+    /// swaps out the innermost primary <see cref="HttpMessageHandler"/> for
+    /// <paramref name="handler"/> so no real network call is made. The resilience pipeline's
+    /// <c>DelegatingHandler</c>s registered via <c>AddResilienceHandler</c> sit OUTSIDE the primary
+    /// handler, so they still run against <paramref name="handler"/>'s canned responses.
+    /// </summary>
+    private static ServiceProvider BuildProviderWithRecordingHandler(RecordingHandler handler, int maxRetries)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["WhatsApp:AccessToken"] = "test-access-token",
+                ["WhatsApp:PhoneNumberId"] = "123456789",
+                ["WhatsApp:ApiVersion"] = "v21.0",
+                ["WhatsApp:BaseUrl"] = "https://graph.facebook.com/{0}/",
+                ["WhatsApp:MaxRetries"] = maxRetries.ToString(CultureInfo.InvariantCulture),
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddWhatsAppCloudApi(configuration);
+        services.AddHttpClient(nameof(IWhatsAppClient))
+            .ConfigurePrimaryHttpMessageHandler(() => handler);
+
         return services.BuildServiceProvider();
     }
 
@@ -59,5 +94,155 @@ public class ServiceCollectionExtensionsTests
         var httpClient = factory.CreateClient(nameof(IWhatsAppClient));
 
         Assert.Equal(new Uri("https://graph.facebook.com/v21.0/"), httpClient.BaseAddress);
+    }
+
+    [Fact]
+    public async Task RetryPipeline_TransientStatusThenSuccess_RetriesUntilSuccessfulAndReturnsFinalResponse()
+    {
+        var statuses = new Queue<HttpStatusCode>([HttpStatusCode.ServiceUnavailable, HttpStatusCode.ServiceUnavailable, HttpStatusCode.OK]);
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(statuses.Dequeue()));
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 2);
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        var response = await client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(3, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task RetryPipeline_TransientGraphSubcodeIn4xxBody_Retries()
+    {
+        const string transientBody = """{"error":{"message":"Rate limited","type":"OAuthException","code":100,"error_subcode":131048}}""";
+        var responded = false;
+        var handler = new RecordingHandler(_ =>
+        {
+            if (!responded)
+            {
+                responded = true;
+                return new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = new StringContent(transientBody, Encoding.UTF8, "application/json"),
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 1);
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        var response = await client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task RetryPipeline_MaxRetries_NotExceeded_WhenFailureNeverResolves()
+    {
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 2);
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        var response = await client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics"));
+
+        // Initial attempt + at most MaxRetries retries — never unbounded.
+        Assert.Equal(3, handler.RequestCount);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RetryPipeline_PermanentNonTransient4xx_DoesNotRetry_PassesThroughUnchanged()
+    {
+        const string permanentBody = """{"error":{"message":"Invalid parameter","type":"OAuthException","code":100,"error_subcode":2018001}}""";
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent(permanentBody, Encoding.UTF8, "application/json"),
+        });
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 3);
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        var response = await client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics"));
+
+        Assert.Equal(1, handler.RequestCount);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        // The body must still be fully readable downstream — GraphErrorPeek's buffer-and-replace
+        // must not have consumed it even though the predicate peeked it to decide not to retry.
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Equal(permanentBody, body);
+    }
+
+    /// <summary>
+    /// Mandated consistency lock-in (tasks.md 3.5): <see cref="WhatsAppError.IsTransient"/> and the
+    /// resilience pipeline's own classification (<see cref="WhatsAppRetryPredicate.ShouldRetryAsync"/>,
+    /// which is the exact delegate wired as the "whatsapp-retry" pipeline's <c>ShouldHandle</c> — see
+    /// <see cref="ServiceCollectionExtensions.AddWhatsAppCloudApi"/>) must never diverge, for the full
+    /// seeded transient-subcode list and for 5xx responses carrying a structured JSON error body.
+    /// </summary>
+    [Theory]
+    [InlineData(100, 131048, "seeded transient subcode: spam rate limit hit")]
+    [InlineData(100, 131056, "seeded transient subcode: phone-number pair rate limit")]
+    [InlineData(100, 133016, "seeded transient subcode: message throughput exceeded")]
+    [InlineData(80007, null, "rate-limit code is always transient")]
+    public async Task Consistency_SeededTransientSubcodes_IsTransientAgreesWithPipelinePredicate(int code, int? subcode, string because)
+    {
+        var subcodeJson = subcode is { } s ? s.ToString(CultureInfo.InvariantCulture) : "null";
+        var json = $$$"""{"error":{"message":"m","type":"OAuthException","code":{{{code}}},"error_subcode":{{{subcodeJson}}}}}""";
+        using var response = new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        };
+
+        var error = new WhatsAppError { Code = code, ErrorSubcode = subcode };
+        var pipelineWouldRetry = await WhatsAppRetryPredicate.ShouldRetryAsync(response, exception: null, CancellationToken.None);
+
+        Assert.True(error.IsTransient == pipelineWouldRetry, because);
+        Assert.True(error.IsTransient, because);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.BadGateway)]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    public async Task Consistency_5xxWithStructuredJsonBody_IsTransientAgreesWithPipelinePredicate(HttpStatusCode statusCode)
+    {
+        // A 5xx response whose JSON body happens to echo the HTTP status as its own "code" field
+        // (common for infra-level gateway errors that still wrap a JSON envelope). The pipeline's
+        // predicate must classify this transient purely from the real HttpStatusCode; WhatsAppError
+        // must independently agree via Code's dual Graph/HTTP-status meaning.
+        var statusAsCode = (int)statusCode;
+        var json = $$$"""{"error":{"message":"Upstream failure","type":"OAuthException","code":{{{statusAsCode}}}}}""";
+        using var response = new HttpResponseMessage(statusCode)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        };
+
+        var error = new WhatsAppError { Code = statusAsCode };
+        var pipelineWouldRetry = await WhatsAppRetryPredicate.ShouldRetryAsync(response, exception: null, CancellationToken.None);
+
+        Assert.True(error.IsTransient);
+        Assert.True(pipelineWouldRetry);
+        Assert.Equal(error.IsTransient, pipelineWouldRetry);
+    }
+
+    [Theory]
+    [InlineData(190, 463, "expired access token is a permanent business error")]
+    [InlineData(100, 2018001, "invalid template parameter is a permanent business error")]
+    public async Task Consistency_PermanentBusinessErrors_IsTransientAgreesWithPipelinePredicate(int code, int? subcode, string because)
+    {
+        var subcodeJson = subcode is { } s ? s.ToString(CultureInfo.InvariantCulture) : "null";
+        var json = $$$"""{"error":{"message":"m","type":"OAuthException","code":{{{code}}},"error_subcode":{{{subcodeJson}}}}}""";
+        using var response = new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        };
+
+        var error = new WhatsAppError { Code = code, ErrorSubcode = subcode };
+        var pipelineWouldRetry = await WhatsAppRetryPredicate.ShouldRetryAsync(response, exception: null, CancellationToken.None);
+
+        Assert.False(error.IsTransient, because);
+        Assert.False(pipelineWouldRetry, because);
+        Assert.Equal(error.IsTransient, pipelineWouldRetry);
     }
 }

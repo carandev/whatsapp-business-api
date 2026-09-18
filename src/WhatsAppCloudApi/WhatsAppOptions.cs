@@ -43,8 +43,9 @@ public sealed class WhatsAppOptions
     public string BaseUrl { get; set; } = "https://graph.facebook.com/{0}/";
 
     /// <summary>
-    /// The maximum number of retry attempts for transient failures. Not yet enforced by this
-    /// scaffold; reserved for the resilience handler added in a future release.
+    /// The maximum number of retry attempts for transient failures (5xx responses and recognized
+    /// transient Graph error codes/subcodes). Enforced by the <c>"whatsapp-retry"</c> resilience
+    /// pipeline registered by <c>AddWhatsAppCloudApi</c>.
     /// </summary>
     public int MaxRetries { get; set; } = 3;
 
