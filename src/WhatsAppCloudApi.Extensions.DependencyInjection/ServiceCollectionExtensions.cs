@@ -33,11 +33,16 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(WhatsAppOptions.SectionName))
             .ValidateDataAnnotations();
 
+        services.AddTransient<WhatsAppRetryExhaustionHandler>();
+
         services.AddHttpClient<IWhatsAppClient, WhatsAppClient>((provider, httpClient) =>
         {
             var options = provider.GetRequiredService<IOptions<WhatsAppOptions>>().Value;
             httpClient.BaseAddress = new Uri(string.Format(options.BaseUrl, options.ApiVersion));
         })
+        // Registered BEFORE (outside) the resilience handler below, so it only sees the pipeline's
+        // FINAL post-retry outcome — never an individual retry attempt.
+        .AddHttpMessageHandler<WhatsAppRetryExhaustionHandler>()
         .AddResilienceHandler("whatsapp-retry", (builder, context) =>
         {
             var options = context.ServiceProvider.GetRequiredService<IOptions<WhatsAppOptions>>().Value;

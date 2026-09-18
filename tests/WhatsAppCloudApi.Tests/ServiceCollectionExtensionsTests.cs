@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using WhatsAppCloudApi.Clients;
+using WhatsAppCloudApi.Exceptions;
 using WhatsAppCloudApi.Extensions.DependencyInjection;
 using WhatsAppCloudApi.Extensions.DependencyInjection.Resilience;
 using WhatsAppCloudApi.Serialization;
@@ -144,11 +145,62 @@ public class ServiceCollectionExtensionsTests
         using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 2);
         var client = provider.GetRequiredService<IWhatsAppClient>();
 
+        // Retries are bounded (initial attempt + at most MaxRetries retries — never unbounded), but
+        // since the failure is transient and never resolves, WhatsAppRetryExhaustionHandler now
+        // throws instead of returning the last failed response (see the exhaustion tests below).
+        await Assert.ThrowsAsync<WhatsAppException>(() => client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics")));
+
+        Assert.Equal(3, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task RetryPipeline_ExhaustedOn5xx_ThrowsWhatsAppException_WithFinalStatusAsCode()
+    {
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 1);
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        var exception = await Assert.ThrowsAsync<WhatsAppException>(() =>
+            client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics")));
+
+        Assert.Equal(2, handler.RequestCount);
+        Assert.Equal((int)HttpStatusCode.ServiceUnavailable, exception.Code);
+        Assert.True(exception.IsTransient);
+    }
+
+    [Fact]
+    public async Task RetryPipeline_ExhaustedOnRateLimitCode_ThrowsWhatsAppRateLimitException()
+    {
+        const string rateLimitedBody = """{"error":{"message":"Too many requests","type":"OAuthException","code":80007,"fbtrace_id":"trace-abc"}}""";
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+        {
+            Content = new StringContent(rateLimitedBody, Encoding.UTF8, "application/json"),
+        });
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 1);
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        var exception = await Assert.ThrowsAsync<WhatsAppRateLimitException>(() =>
+            client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics")));
+
+        Assert.Equal(2, handler.RequestCount);
+        Assert.Equal(80007, exception.Code);
+        Assert.Equal("trace-abc", exception.FbTraceId);
+        Assert.True(exception.IsTransient);
+    }
+
+    [Fact]
+    public async Task RetryPipeline_TransientThenSuccess_DoesNotThrow_RegressionCheck()
+    {
+        var statuses = new Queue<HttpStatusCode>([HttpStatusCode.ServiceUnavailable, HttpStatusCode.OK]);
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(statuses.Dequeue()));
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 2);
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        // Must complete normally — no exception — since the pipeline resolved before exhaustion.
         var response = await client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics"));
 
-        // Initial attempt + at most MaxRetries retries — never unbounded.
-        Assert.Equal(3, handler.RequestCount);
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, handler.RequestCount);
     }
 
     [Fact]
