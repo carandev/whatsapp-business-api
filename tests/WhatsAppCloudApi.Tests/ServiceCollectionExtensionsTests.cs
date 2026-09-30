@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -136,6 +138,45 @@ public class ServiceCollectionExtensionsTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(2, handler.RequestCount);
+    }
+
+    /// <summary>
+    /// Covers the spec's "Retry-After respected" scenario (resilience-pipeline domain), previously
+    /// untested: the pipeline's built-in <c>ShouldRetryAfterHeader</c> default (see
+    /// <see cref="ServiceCollectionExtensions.AddWhatsAppCloudApi"/>) must honor a real
+    /// <c>Retry-After</c> header rather than falling back to the pipeline's own short 250ms
+    /// exponential+jitter base delay. A 1-second header value is deliberately >> the 250ms base
+    /// delay, so a measured elapsed time well past 250ms but consistent with ~1s proves the header
+    /// — not the default backoff — actually governed the wait.
+    /// </summary>
+    [Fact]
+    public async Task RetryPipeline_RetryAfterHeader_DelaysRetryByAtLeastHeaderValue()
+    {
+        var responded = false;
+        var handler = new RecordingHandler(_ =>
+        {
+            if (!responded)
+            {
+                responded = true;
+                var retryAfterResponse = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+                retryAfterResponse.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(1));
+                return retryAfterResponse;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 1);
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        var stopwatch = Stopwatch.StartNew();
+        var response = await client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics"));
+        stopwatch.Stop();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, handler.RequestCount);
+        Assert.True(
+            stopwatch.Elapsed >= TimeSpan.FromMilliseconds(900),
+            $"Expected the retry delay to respect the 1s Retry-After header (>= ~900ms), but only {stopwatch.Elapsed.TotalMilliseconds}ms elapsed — the pipeline's own 250ms default backoff may have been used instead.");
     }
 
     [Fact]
