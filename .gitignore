@@ -4,6 +4,10 @@ obj/
 *.user
 *.suo
 
+## Local secrets (samples) - never commit real WhatsApp credentials
+appsettings.Local.json
+appsettings.*.local.json
+
 ## Rider / VS
 .vs/
 .idea/
