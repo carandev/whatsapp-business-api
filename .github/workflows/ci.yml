@@ -43,6 +43,11 @@ jobs:
       - name: Pack
         run: dotnet pack --configuration Release --no-build --output artifacts
 
+      - name: Build documentation
+        run: |
+          dotnet tool restore
+          dotnet docfx docs/docfx.json --warningsAsErrors
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,0 +1,16 @@
+- name: Getting started
+  href: getting-started.md
+- name: Configuration
+  href: configuration.md
+- name: Sending messages
+  href: sending-messages.md
+- name: Media
+  href: media.md
+- name: Message templates
+  href: templates.md
+- name: Phone numbers and business profile
+  href: phone-numbers-and-profile.md
+- name: Receiving webhooks
+  href: webhooks.md
+- name: Errors and retries
+  href: errors-and-resilience.md

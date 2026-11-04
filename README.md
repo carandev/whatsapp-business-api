@@ -46,10 +46,10 @@ cp appsettings.json appsettings.Local.json   # then edit appsettings.Local.json 
 dotnet run
 ```
 
-Run it from inside `samples/SendHelloWorld` (not the repo root) so `Host.CreateApplicationBuilder` finds `appsettings.json` relative to the current directory. Without real credentials configured, the sample prints a clear "Credentials are not configured" message and exits — it never sends a request or crashes with an unhandled exception. With real credentials, it sends `"Hello from Carandev.WhatsApp.Sdk SDK!"` to the phone number in `SendHelloWorld:RecipientPhoneNumber` and prints the outcome:
+Run it from inside `samples/SendHelloWorld` (not the repo root) so `Host.CreateApplicationBuilder` finds `appsettings.json` relative to the current directory. Without real credentials configured, the sample prints a clear "Credentials are not configured" message and exits — it never sends a request or crashes with an unhandled exception. With real credentials, it sends `"Hello from Carandev.WhatsApp.Sdk!"` to the phone number in `SendHelloWorld:RecipientPhoneNumber` and prints the outcome:
 
 - **Success** — the sent message's `MessageId`.
-- **Business failure** (`Result<MessageResponse>.Failure`, e.g. invalid recipient) — the full `WhatsAppError` (`Code`/`Subcode`/`Title`/`Message`/`UserTitle`/`UserMessage`/`FbTraceId`).
+- **Business failure** (`Result<MessageResponse>.Failure`, e.g. invalid recipient) — the full `WhatsAppError` (`Code`/`ErrorSubcode`/`Type`/`Message`/`ErrorUserTitle`/`ErrorUserMsg`/`FbtraceId`).
 - **Transport failure** (`WhatsAppException`, thrown only after the retry pipeline exhausts `WhatsAppOptions.MaxRetries` on a transient error) — the same fields plus `IsTransient`.
 
 See [`samples/SendHelloWorld/Program.cs`](samples/SendHelloWorld/Program.cs) for the full, runnable example of both error-handling paths.
@@ -78,7 +78,7 @@ using var host = builder.Build();
 ```csharp
 var messagesClient = host.Services.GetRequiredService<IWhatsAppMessagesClient>();
 
-var result = await messagesClient.SendTextAsync(to: "15551234567", body: "Hello from Carandev.WhatsApp.Sdk SDK!");
+var result = await messagesClient.SendTextAsync(to: "15551234567", body: "Hello from Carandev.WhatsApp.Sdk!");
 
 if (result.IsSuccess)
 {
@@ -195,6 +195,17 @@ See the [webhook setup guide](https://developers.facebook.com/docs/whatsapp/clou
 - [Media](https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media)
 - [Webhooks setup](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks)
 - [Error codes reference](https://developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes)
+
+## Documentation
+
+The documentation site (guides plus a generated API reference) lives in [`docs/`](docs) and is built with [DocFX](https://dotnet.github.io/docfx/):
+
+```bash
+dotnet tool restore
+dotnet docfx docs/docfx.json --serve
+```
+
+Then open http://localhost:8080.
 
 ## Development
 
