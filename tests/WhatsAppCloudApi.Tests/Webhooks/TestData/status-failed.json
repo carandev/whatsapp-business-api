@@ -1,0 +1,16 @@
+{
+  "id": "wamid.HBgLMTYzMTU1NTgxNTEVAgARGBI1QjJGRjI1RDNBMjBFRDQ3RTcA",
+  "status": "failed",
+  "timestamp": "1603059245",
+  "recipient_id": "16315558151",
+  "errors": [
+    {
+      "code": 131047,
+      "title": "Re-engagement message",
+      "message": "Re-engagement message",
+      "error_data": {
+        "details": "Message failed to send because more than 24 hours have passed since the customer last replied to this number."
+      }
+    }
+  ]
+}

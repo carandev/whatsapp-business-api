@@ -1,0 +1,18 @@
+{
+  "id": "wamid.HBgLMTYzMTU1NTgxNTEVAgARGBI1QjJGRjI1RDNBMjBFRDQ3RTcA",
+  "status": "sent",
+  "timestamp": "1603059201",
+  "recipient_id": "16315558151",
+  "conversation": {
+    "id": "CONVERSATION_ID",
+    "origin": {
+      "type": "business_initiated"
+    },
+    "expiration_timestamp": "1603062801"
+  },
+  "pricing": {
+    "billable": true,
+    "pricing_model": "CBP",
+    "category": "business_initiated"
+  }
+}

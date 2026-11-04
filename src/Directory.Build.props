@@ -1,0 +1,32 @@
+<Project>
+
+  <!--
+    Scoped hardening for the published NuGet surface (core WhatsAppCloudApi + the
+    Extensions.* projects under src/). Deliberately NOT applied to tests/ or samples/,
+    which keep the relaxed root-level settings (see ../Directory.Build.props).
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..\'))" />
+
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!--
+      The root Directory.Build.props suppresses CS1591 (missing XML doc comment on a
+      public member) repo-wide so tests/samples don't need doc comments. Re-enable it
+      here so TreatWarningsAsErrors actually enforces documentation on the public API
+      surface of the packages we ship.
+    -->
+    <NoWarn></NoWarn>
+
+    <!-- Deterministic, CI-reproducible builds for the published package. -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Repo is hosted on GitHub (origin: github.com/carandev/whatsapp-business-api). -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

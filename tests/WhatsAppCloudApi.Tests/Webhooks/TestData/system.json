@@ -1,0 +1,12 @@
+{
+  "from": "16315551234",
+  "id": "wamid.ID_SYSTEM",
+  "timestamp": "1603059214",
+  "type": "system",
+  "system": {
+    "body": "User A changed to 16315551234 from 16315550000",
+    "wa_id": "16315551234",
+    "new_wa_id": "16315551234",
+    "type": "customer_changed_number"
+  }
+}

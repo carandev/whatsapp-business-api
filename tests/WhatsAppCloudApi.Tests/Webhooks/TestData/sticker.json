@@ -1,0 +1,12 @@
+{
+  "from": "16315551234",
+  "id": "wamid.ID_STICKER",
+  "timestamp": "1603059206",
+  "type": "sticker",
+  "sticker": {
+    "mime_type": "image/webp",
+    "sha256": "d6e4f8a0b2d4f6e8a0b2d4f6e8a0b2d4f6e8a0b2d4f6e8a0b2d4f6e8a0b2d4f6",
+    "id": "5234567890",
+    "animated": false
+  }
+}

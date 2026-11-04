@@ -1,0 +1,10 @@
+{
+  "from": "16315551234",
+  "id": "wamid.ID_UNKNOWN",
+  "timestamp": "1603059215",
+  "type": "order",
+  "order": {
+    "catalog_id": "123456",
+    "text": "Order details"
+  }
+}

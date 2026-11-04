@@ -1,0 +1,12 @@
+{
+  "from": "16315551234",
+  "id": "wamid.ID_VIDEO",
+  "timestamp": "1603059205",
+  "type": "video",
+  "video": {
+    "mime_type": "video/mp4",
+    "sha256": "c5d3e7f9a1c3e5d7f9b1c3e5d7f9b1c3e5d7f9b1c3e5d7f9b1c3e5d7f9b1c3e5",
+    "id": "4234567890",
+    "caption": "Watch this"
+  }
+}

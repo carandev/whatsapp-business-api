@@ -1,0 +1,12 @@
+{
+  "from": "16315551234",
+  "id": "wamid.ID_LOCATION",
+  "timestamp": "1603059207",
+  "type": "location",
+  "location": {
+    "latitude": 37.483499,
+    "longitude": -122.148499,
+    "name": "Facebook HQ",
+    "address": "1 Hacker Way, Menlo Park, CA"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "from": "16315551234",
+  "id": "wamid.ID_IMAGE",
+  "timestamp": "1603059202",
+  "type": "image",
+  "image": {
+    "mime_type": "image/jpeg",
+    "sha256": "29ed500fa64eb55fc19dc4124acb300e5dcc54a0f8318ecdd7f9cb9a3d1e3f0",
+    "id": "1234567890",
+    "caption": "Check this out"
+  }
+}

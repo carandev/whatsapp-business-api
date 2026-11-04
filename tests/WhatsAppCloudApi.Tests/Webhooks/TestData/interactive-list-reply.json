@@ -1,0 +1,14 @@
+{
+  "from": "16315551234",
+  "id": "wamid.ID_INTERACTIVE_LIST",
+  "timestamp": "1603059211",
+  "type": "interactive",
+  "interactive": {
+    "type": "list_reply",
+    "list_reply": {
+      "id": "unique-row-id",
+      "title": "Option A",
+      "description": "The first option"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "from": "16315551234",
+  "id": "wamid.ID_BUTTON",
+  "timestamp": "1603059209",
+  "type": "button",
+  "context": {
+    "from": "15550559999",
+    "id": "wamid.ORIGINAL_TEMPLATE_MESSAGE"
+  },
+  "button": {
+    "payload": "Yes-Button-Payload",
+    "text": "Yes"
+  }
+}
