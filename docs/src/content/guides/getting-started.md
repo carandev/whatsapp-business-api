@@ -1,4 +1,8 @@
-# Getting started
+---
+title: Getting started
+description: "Install the package, configure credentials, and send your first message."
+order: 1
+---
 
 ## Install
 
@@ -28,10 +32,13 @@ The SDK binds `WhatsAppOptions` from the `WhatsApp` configuration section:
 }
 ```
 
-> [!WARNING]
-> Never commit real credentials. Use [`dotnet user-secrets`](https://learn.microsoft.com/aspnet/core/security/app-secrets), environment variables (`WhatsApp__AccessToken`), or a gitignored settings file.
+<aside class="callout callout--warning" data-label="Warning">
 
-See [Configuration](configuration.md) for every option.
+Never commit real credentials. Use [`dotnet user-secrets`](https://learn.microsoft.com/aspnet/core/security/app-secrets), environment variables (`WhatsApp__AccessToken`), or a gitignored settings file.
+
+</aside>
+
+See [Configuration](../configuration/) for every option.
 
 ## Register the clients
 
@@ -79,13 +86,16 @@ else
 
 Phone numbers use international format with no `+`, spaces, or dashes.
 
-> [!NOTE]
-> Outside the 24-hour customer service window, WhatsApp only accepts [template messages](templates.md). To test free-form text, first send a message to your business number from the recipient's phone.
+<aside class="callout callout--note" data-label="Note">
+
+Outside the 24-hour customer service window, WhatsApp only accepts [template messages](../templates/). To test free-form text, first send a message to your business number from the recipient's phone.
+
+</aside>
 
 The repository includes a runnable console sample in [`samples/SendHelloWorld`](https://github.com/carandev/whatsapp-business-api/tree/main/samples/SendHelloWorld).
 
 ## Next steps
 
-- [Sending messages](sending-messages.md)
-- [Receiving webhooks](webhooks.md)
-- [Errors and retries](errors-and-resilience.md)
+- [Sending messages](../sending-messages/)
+- [Receiving webhooks](../webhooks/)
+- [Errors and retries](../errors-and-resilience/)

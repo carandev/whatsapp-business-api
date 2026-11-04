@@ -1,4 +1,8 @@
-# Phone numbers and business profile
+---
+title: Phone numbers and business profile
+description: "Read phone numbers, verify codes, and manage the business profile."
+order: 6
+---
 
 The examples assume `phoneNumbers` is an `IWhatsAppPhoneNumbersClient` and `businessProfile` is an `IWhatsAppBusinessProfileClient`.
 

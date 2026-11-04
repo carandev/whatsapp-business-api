@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro'
+import Header from '../components/Header.astro'
+import Sketch from '../components/Sketch.astro'
+import { url } from '../lib/paths'
+---
+
+<Base description='Page not found.' title='Page not found'>
+  <Header />
+  <main class='container missing' data-visible>
+    <p class='eyebrow'>404</p>
+    <h1>This page got lost in the notebook.</h1>
+    <Sketch class='missing__line' shape='underline' />
+    <p>The link may be outdated. Try the guides or the API reference.</p>
+    <div class='missing__actions'>
+      <a class='btn btn--primary' href={url('guides/getting-started/')}>Guides</a>
+      <a class='btn btn--outline' href={url('api/')}>API reference</a>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .missing { padding-top: 96px; padding-bottom: 96px; text-align: center; }
+  .missing h1 { margin-top: 8px; font-size: clamp(32px, 4vw, 44px); }
+  .missing :global(.missing__line) { display: block; width: 260px; height: 14px; margin: 12px auto 20px; }
+  .missing p:not(.eyebrow) { color: var(--ink-light); font-size: 18px; }
+  .missing__actions { display: flex; justify-content: center; gap: 12px; margin-top: 28px; }
+</style>

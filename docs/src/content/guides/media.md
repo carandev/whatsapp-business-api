@@ -1,4 +1,8 @@
-# Media
+---
+title: Media
+description: "Upload files, resolve media IDs, and download inbound media."
+order: 4
+---
 
 `IWhatsAppMediaClient` uploads files to WhatsApp, resolves media IDs to download URLs, and downloads media. The examples assume `media` is an `IWhatsAppMediaClient` and `messages` is an `IWhatsAppMessagesClient`.
 
@@ -48,5 +52,8 @@ if (url.IsSuccess)
 
 `DownloadAsync` returns a `Stream` you must dispose. `DownloadBytesAsync` buffers the whole file into a `byte[]` instead.
 
-> [!NOTE]
-> Download URLs expire after a few minutes. Resolve a fresh URL with `GetMediaUrlAsync` right before downloading.
+<aside class="callout callout--note" data-label="Note">
+
+Download URLs expire after a few minutes. Resolve a fresh URL with `GetMediaUrlAsync` right before downloading.
+
+</aside>

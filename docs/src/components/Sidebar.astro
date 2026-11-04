@@ -1,0 +1,32 @@
+---
+import { getCollection } from 'astro:content'
+import { loadApi, namespaceSlug, shortNamespace } from '../lib/api'
+import { url } from '../lib/paths'
+
+interface Props { current: string }
+const { current } = Astro.props
+const guides = (await getCollection('guides')).sort((a, b) => a.data.order - b.data.order)
+const namespaces = loadApi()
+const here = (href: string) => (current === href ? 'page' : undefined)
+---
+
+<aside aria-label='Documentation' class='sidebar' data-sidebar id='sidebar'>
+  <div class='sidebar__group'>
+    <p class='sidebar__title'>Guides</p>
+    <ul class='sidebar__list'>
+      {guides.map(guide => {
+        const href = url(`guides/${guide.id}/`)
+        return <li><a aria-current={here(href)} class='sidebar__link' href={href}>{guide.data.title}</a></li>
+      })}
+    </ul>
+  </div>
+  <div class='sidebar__group'>
+    <p class='sidebar__title'>API reference</p>
+    <ul class='sidebar__list'>
+      <li><a aria-current={here(url('api/'))} class='sidebar__link' href={url('api/')}>Overview</a></li>
+      {namespaces.map(ns => (
+        <li><a class='sidebar__link sidebar__link--ns' href={`${url('api/')}#${namespaceSlug(ns.name)}`}>{shortNamespace(ns.name)}</a></li>
+      ))}
+    </ul>
+  </div>
+</aside>

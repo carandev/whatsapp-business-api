@@ -21,10 +21,10 @@ jobs:
   build-test-pack:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # SDK 10 builds everything; runtimes 8 and 9 are needed to run the multi-targeted tests.
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: |
             8.0.x
@@ -43,20 +43,15 @@ jobs:
       - name: Pack
         run: dotnet pack --configuration Release --no-build --output artifacts
 
-      - name: Build documentation
-        run: |
-          dotnet tool restore
-          dotnet docfx docs/docfx.json --warningsAsErrors
-
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: TestResults
 
       - name: Upload packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages
           path: artifacts/*

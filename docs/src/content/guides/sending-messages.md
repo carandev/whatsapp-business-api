@@ -1,4 +1,8 @@
-# Sending messages
+---
+title: Sending messages
+description: "Text, media, location, contacts, templates, and interactive messages."
+order: 3
+---
 
 All send methods live on `IWhatsAppMessagesClient` and return `Task<Result<MessageResponse>>`. The examples assume `messages` is an `IWhatsAppMessagesClient` resolved from dependency injection and `to` is the recipient's number in international format without `+`.
 
@@ -22,7 +26,7 @@ await messages.SendTextAsync(to, "Thanks, we got it!", context: new Context { Me
 
 ## Media
 
-Send images, documents, videos, audio, and stickers by **either** a `mediaId` from an [upload](media.md) **or** a public HTTPS `link`:
+Send images, documents, videos, audio, and stickers by **either** a `mediaId` from an [upload](../media/) **or** a public HTTPS `link`:
 
 ```csharp
 await messages.SendImageAsync(to, link: "https://example.com/product.jpg", caption: "New arrival");
@@ -53,7 +57,7 @@ await messages.SendContactsAsync(to,
 
 ## Templates
 
-Template messages are the only messages you can send outside the 24-hour customer service window. The template must already be [approved](templates.md).
+Template messages are the only messages you can send outside the 24-hour customer service window. The template must already be [approved](../templates/).
 
 ```csharp
 await messages.SendTemplateAsync(to, templateName: "hello_world", languageCode: "en_US");
@@ -129,4 +133,4 @@ else
 }
 ```
 
-See [Errors and retries](errors-and-resilience.md) for when a call returns a failure versus throws.
+See [Errors and retries](../errors-and-resilience/) for when a call returns a failure versus throws.

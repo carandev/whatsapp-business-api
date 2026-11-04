@@ -1,5 +1,7 @@
 # Carandev.WhatsApp.Sdk
 
+[Documentation](https://carandev.github.io/whatsapp-business-api/) · [NuGet](https://www.nuget.org/packages/Carandev.WhatsApp.Sdk)
+
 A .NET SDK for [Meta's WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api). Send messages (text, media, templates, interactive), manage business profile/phone number/template resources, and receive inbound webhooks — all through a typed, dependency-injection-friendly client with built-in retry/resilience and structured error handling.
 
 Targets `net8.0` and `net9.0`.
@@ -198,14 +200,16 @@ See the [webhook setup guide](https://developers.facebook.com/docs/whatsapp/clou
 
 ## Documentation
 
-The documentation site (guides plus a generated API reference) lives in [`docs/`](docs) and is built with [DocFX](https://dotnet.github.io/docfx/):
+Full guides and the API reference: **https://carandev.github.io/whatsapp-business-api/**
+
+The site lives in [`docs/`](docs) and is built with [Astro](https://astro.build). The API reference is generated from the SDK's XML documentation by [`tools/ApiExtractor`](tools/ApiExtractor):
 
 ```bash
-dotnet tool restore
-dotnet docfx docs/docfx.json --serve
+cd docs
+npm ci
+npm run api   # requires the .NET SDK
+npm run dev   # http://localhost:4321/whatsapp-business-api/
 ```
-
-Then open http://localhost:8080.
 
 ## Development
 

@@ -1,4 +1,8 @@
-# Receiving webhooks
+---
+title: Receiving webhooks
+description: "Verify subscriptions, validate signatures, and dispatch inbound events on any host."
+order: 7
+---
 
 Webhook support ships in the same `Carandev.WhatsApp.Sdk` package and does not depend on ASP.NET Core. `IWhatsAppWebhookProcessor` (registered by `AddWhatsAppCloudApi`) does the protocol work: the subscription handshake, `X-Hub-Signature-256` validation against `WhatsAppOptions.AppSecret`, payload parsing, and dispatch to your `WhatsAppWebhookHandlers`. You own the endpoint, so routing, authentication, DI scopes, and inline-vs-queued processing stay under your control.
 
@@ -107,7 +111,7 @@ sealed class SupportHandlers : WhatsAppWebhookHandlers
 }
 ```
 
-Media messages carry an ID; download the file with [`IWhatsAppMediaClient`](media.md#download-inbound-media).
+Media messages carry an ID; download the file with [`IWhatsAppMediaClient`](../media/#download-inbound-media).
 
 ## Without dependency injection
 

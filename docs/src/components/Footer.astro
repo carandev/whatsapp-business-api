@@ -1,0 +1,25 @@
+---
+import Sketch from './Sketch.astro'
+import { nugetUrl, repoUrl } from '../lib/paths'
+---
+
+<footer class='site-footer' data-reveal>
+  <Sketch class='site-footer__squiggle' shape='squiggle' />
+  <div class='site-footer__inner'>
+    <p><span class='hand'>Carandev.WhatsApp.Sdk</span> · MIT licensed · Not affiliated with Meta.</p>
+    <p class='site-footer__links'>
+      <a href={repoUrl} rel='noopener'>GitHub</a>
+      <a href={nugetUrl} rel='noopener'>NuGet</a>
+      <a href='https://carandev.me' rel='noopener'>carandev.me</a>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer { max-width: 1120px; margin: 0 auto; padding: 0 24px 40px; color: var(--ink-light); font-size: 14px; }
+  .site-footer :global(.site-footer__squiggle) { display: block; width: 100%; height: 20px; margin-bottom: 20px; }
+  .site-footer__inner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+  .site-footer a { color: var(--ink); font-weight: 600; }
+  .site-footer__links { display: flex; gap: 16px; }
+  .hand { font-size: 20px; color: var(--ink); }
+</style>

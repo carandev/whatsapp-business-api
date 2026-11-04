@@ -1,4 +1,8 @@
-# Configuration
+---
+title: Configuration
+description: "Every WhatsAppOptions setting, environment variables, and multiple phone numbers."
+order: 2
+---
 
 `WhatsAppOptions` is bound from the `WhatsApp` configuration section (`WhatsAppOptions.SectionName`) and validated with data annotations the first time the options are resolved (the first client call). Missing required values fail with an `OptionsValidationException`.
 
@@ -9,7 +13,7 @@
 | `WabaId` | For templates and phone number listing | | WhatsApp Business Account ID. WABA-scoped methods also accept a `wabaIdOverride`; without either, they return a `Result` failure instead of calling the API. |
 | `ApiVersion` | No | `v21.0` | Graph API version. |
 | `BaseUrl` | No | `https://graph.facebook.com/{0}/` | Graph API base URL; `{0}` is replaced with `ApiVersion`. |
-| `MaxRetries` | No | `3` | Retry attempts for transient failures. See [Errors and retries](errors-and-resilience.md). |
+| `MaxRetries` | No | `3` | Retry attempts for transient failures. See [Errors and retries](../errors-and-resilience/). |
 | `Timeout` | No | `00:00:30` | Reserved for a future release; not enforced yet. |
 | `AppSecret` | For webhooks | | Meta app secret used to validate `X-Hub-Signature-256`. |
 | `WebhookVerifyToken` | For webhooks | | Token you choose and enter in the Meta App Dashboard for the subscription handshake. |

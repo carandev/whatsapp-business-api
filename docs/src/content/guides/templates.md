@@ -1,8 +1,12 @@
-# Message templates
+---
+title: Message templates
+description: "Create, list, update, and delete message templates."
+order: 5
+---
 
 `IWhatsAppTemplatesClient` manages the templates of your WhatsApp Business Account. These calls are WABA-scoped: configure `WhatsAppOptions.WabaId` or pass `wabaIdOverride`. The examples assume `templates` is an `IWhatsAppTemplatesClient`.
 
-To **send** an approved template, use `IWhatsAppMessagesClient.SendTemplateAsync`; see [Sending messages](sending-messages.md#templates).
+To **send** an approved template, use `IWhatsAppMessagesClient.SendTemplateAsync`; see [Sending messages](../sending-messages/#templates).
 
 ## Create
 
