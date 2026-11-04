@@ -177,3 +177,20 @@ dotnet test
 ```
 
 `src/` projects build with `TreatWarningsAsErrors` and require XML documentation on every public member; `tests/` and `samples/` are not held to that standard.
+
+## Releasing
+
+CI (`.github/workflows/ci.yml`) builds, tests, and packs every push and pull request to `main`.
+
+Publishing to nuget.org is tag-driven (`.github/workflows/release.yml`). The package version comes from the tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Tags with a suffix (for example `v0.2.0-beta.1`) are published as NuGet prereleases. The workflow runs in the `nuget` GitHub environment and needs a `NUGET_API_KEY` secret: a nuget.org API key with push scope for the `Carandev.*` glob.
+
+## License
+
+[MIT](LICENSE)
