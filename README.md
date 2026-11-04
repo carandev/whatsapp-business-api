@@ -8,9 +8,9 @@ Targets `net8.0` and `net9.0`.
 
 | Package | Purpose |
 |---|---|
-| `WhatsAppCloudApi` | Core client, resource clients, models, and the `Result<T>`/`WhatsAppException` error surface. |
-| `WhatsAppCloudApi.Extensions.DependencyInjection` | `AddWhatsAppCloudApi(...)` — registers every resource client plus the retry/resilience pipeline. |
-| `WhatsAppCloudApi.Extensions.AspNetCore` | `UseWhatsAppWebhooks(...)` middleware for receiving inbound webhook events. |
+| `Carandev.WhatsAppCloudApi` | Core client, resource clients, models, and the `Result<T>`/`WhatsAppException` error surface. |
+| `Carandev.WhatsAppCloudApi.Extensions.DependencyInjection` | `AddWhatsAppCloudApi(...)` — registers every resource client plus the retry/resilience pipeline. |
+| `Carandev.WhatsAppCloudApi.Extensions.AspNetCore` | `UseWhatsAppWebhooks(...)` middleware for receiving inbound webhook events. |
 
 ## Quickstart
 
@@ -19,11 +19,11 @@ The fastest way to see the SDK work end-to-end is to run the included [`samples/
 ### 1. Install
 
 ```bash
-dotnet add package WhatsAppCloudApi
-dotnet add package WhatsAppCloudApi.Extensions.DependencyInjection
+dotnet add package Carandev.WhatsAppCloudApi
+dotnet add package Carandev.WhatsAppCloudApi.Extensions.DependencyInjection
 ```
 
-Add `WhatsAppCloudApi.Extensions.AspNetCore` too if you also need to receive inbound webhooks (see [Receiving webhooks](#receiving-webhooks) below).
+Add `Carandev.WhatsAppCloudApi.Extensions.AspNetCore` too if you also need to receive inbound webhooks (see [Receiving webhooks](#receiving-webhooks) below).
 
 ### 2. Configure
 
@@ -114,7 +114,7 @@ catch (WhatsAppException ex)
 
 ## Receiving webhooks
 
-Add `WhatsAppCloudApi.Extensions.AspNetCore` to an ASP.NET Core app, configure `WhatsApp:AppSecret` and `WhatsApp:WebhookVerifyToken` alongside `AccessToken`/`PhoneNumberId`, then wire the middleware:
+Add the `Carandev.WhatsAppCloudApi.Extensions.AspNetCore` package to an ASP.NET Core app, configure `WhatsApp:AppSecret` and `WhatsApp:WebhookVerifyToken` alongside `AccessToken`/`PhoneNumberId`, then wire the middleware:
 
 ```csharp
 using WhatsAppCloudApi.Extensions.AspNetCore;

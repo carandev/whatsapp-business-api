@@ -24,6 +24,33 @@
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
+  <!--
+    NuGet package metadata shared by every published package. The bare 'WhatsAppCloudApi'
+    ID is already taken on nuget.org, so package IDs carry the 'Carandev.' prefix while
+    assembly names and namespaces stay unchanged.
+    Version defaults to a dev prerelease; the release workflow overrides it from the git tag
+    (dotnet pack -p:Version=X.Y.Z).
+  -->
+  <PropertyGroup>
+    <PackageId>Carandev.$(MSBuildProjectName)</PackageId>
+    <Version Condition="'$(Version)' == ''">0.1.0-dev</Version>
+    <Authors>Carlos Gomez</Authors>
+    <Copyright>Copyright (c) 2026 Carlos Gomez</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/carandev/whatsapp-business-api</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/carandev/whatsapp-business-api</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>whatsapp;whatsapp-cloud-api;whatsapp-business;meta;graph-api;messaging;webhooks</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Repo is hosted on GitHub (origin: github.com/carandev/whatsapp-business-api). -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="All" />
