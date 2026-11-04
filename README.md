@@ -224,14 +224,13 @@ dotnet test
 
 CI (`.github/workflows/ci.yml`) builds, tests, and packs every push and pull request to `main`.
 
-Publishing to nuget.org is tag-driven (`.github/workflows/release.yml`). The package version comes from the tag:
+Releases are automated with [release-please](https://github.com/googleapis/release-please) (`.github/workflows/release.yml`), driven by [Conventional Commits](https://www.conventionalcommits.org/):
 
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
+1. Every push to `main` opens or updates a release PR that bumps the version (`fix:` → patch, `feat:` → minor; while below 1.0, breaking changes also bump the minor) and updates `CHANGELOG.md`.
+2. Merging the release PR creates the `vX.Y.Z` tag and GitHub release.
+3. The same workflow then builds, tests, packs, and pushes the package to nuget.org, and attaches the packages to the release.
 
-Tags with a suffix (for example `v0.2.0-beta.1`) are published as NuGet prereleases. The workflow runs in the `nuget` GitHub environment and needs a `NUGET_API_KEY` secret: a nuget.org API key with push scope for the `Carandev.*` glob.
+The publish job runs in the `nuget` GitHub environment and needs a `NUGET_API_KEY` secret: a nuget.org API key with push scope for the `Carandev.*` glob. The repository must also allow GitHub Actions to create pull requests (Settings → Actions → General → Workflow permissions).
 
 ## License
 
