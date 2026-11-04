@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Build-time tool for the documentation site: reflects over Carandev.WhatsApp.Sdk, merges the
+    compiler-generated XML documentation, and writes docs/src/generated/api.json.
+    Usage: see the "api" script in docs/package.json.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net9.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Runs on whatever newer runtime is installed (for example only .NET 10 locally). -->
+    <RollForward>Major</RollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Carandev.WhatsApp.Sdk\Carandev.WhatsApp.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

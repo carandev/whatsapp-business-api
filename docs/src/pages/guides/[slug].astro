@@ -1,0 +1,37 @@
+---
+import { getCollection, render } from 'astro:content'
+import Docs from '../../layouts/Docs.astro'
+import { url } from '../../lib/paths'
+
+export async function getStaticPaths () {
+  const guides = (await getCollection('guides')).sort((a, b) => a.data.order - b.data.order)
+  return guides.map((guide, index) => ({
+    params: { slug: guide.id },
+    props: { guide, prev: guides[index - 1], next: guides[index + 1] }
+  }))
+}
+
+const { guide, prev, next } = Astro.props
+const { Content, headings } = await render(guide)
+const toc = headings.filter(h => h.depth === 2 || h.depth === 3)
+---
+
+<Docs description={guide.data.description} eyebrow='Guide' lead={guide.data.description} section='guides' title={guide.data.title} toc={toc}>
+  <article class='prose'>
+    <Content />
+  </article>
+  <nav aria-label='Pagination' class='pager'>
+    {prev && (
+      <a class='pager__link' href={url(`guides/${prev.id}/`)}>
+        <span class='pager__dir'>← Previous</span>
+        <span class='pager__title'>{prev.data.title}</span>
+      </a>
+    )}
+    {next && (
+      <a class='pager__link pager__link--next' href={url(`guides/${next.id}/`)}>
+        <span class='pager__dir'>Next →</span>
+        <span class='pager__title'>{next.data.title}</span>
+      </a>
+    )}
+  </nav>
+</Docs>

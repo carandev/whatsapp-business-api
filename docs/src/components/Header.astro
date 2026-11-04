@@ -1,0 +1,30 @@
+---
+import Sketch from './Sketch.astro'
+import { repoUrl, url } from '../lib/paths'
+
+interface Props { section?: 'home' | 'guides' | 'api'; withMenu?: boolean }
+const { section = 'home', withMenu = false } = Astro.props
+---
+
+<header class='site-header'>
+  <div class='site-header__inner'>
+    {withMenu && (
+      <button aria-controls='sidebar' aria-expanded='false' aria-label='Toggle navigation' class='icon-btn menu-toggle' data-menu-toggle type='button'>
+        <svg fill='none' stroke='currentColor' stroke-linecap='round' stroke-width='2' viewBox='0 0 24 24'><path d='M4 7h16M4 12h16M4 17h16' /></svg>
+      </button>
+    )}
+    <a aria-label='Carandev.WhatsApp.Sdk home' class='logo' data-visible href={url()}>
+      <Sketch shape='circle' />
+      carandev <span class='logo__sdk'>WhatsApp.Sdk</span>
+    </a>
+    <nav aria-label='Main' class='site-nav'>
+      <a aria-current={section === 'guides' ? 'page' : undefined} class='site-nav__link' href={url('guides/getting-started/')}>Guides</a>
+      <a aria-current={section === 'api' ? 'page' : undefined} class='site-nav__link' href={url('api/')}>API</a>
+      <a class='site-nav__link site-nav__link--hide-sm' href={`${repoUrl}`} rel='noopener'>GitHub</a>
+    </nav>
+    <button aria-label='Toggle dark mode' class='icon-btn theme-toggle' data-theme-toggle type='button'>
+      <svg class='icon-moon' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24'><path d='M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z' /></svg>
+      <svg class='icon-sun' fill='none' stroke='currentColor' stroke-linecap='round' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='4' /><path d='M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4' /></svg>
+    </button>
+  </div>
+</header>

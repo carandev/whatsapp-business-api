@@ -1,0 +1,36 @@
+---
+/**
+ * Hand-drawn strokes. Each path uses pathLength=1 so the `.sketch` class (tokens.css)
+ * animates it as if it were being drawn when it enters the viewport.
+ */
+interface Props {
+  shape: 'underline' | 'circle' | 'arrow' | 'squiggle'
+  class?: string
+  color?: string
+  strokeWidth?: number
+}
+
+const defaults = {
+  underline: { color: 'var(--wine-500)', width: 3, viewBox: '0 0 220 14' },
+  circle: { color: 'var(--lavender-border)', width: 3, viewBox: '0 0 160 60' },
+  arrow: { color: 'var(--lavender-accent)', width: 2.5, viewBox: '0 0 80 60' },
+  squiggle: { color: 'var(--paper-border-strong)', width: 2, viewBox: '0 0 720 20' }
+}
+
+const { shape, class: className = '', color, strokeWidth } = Astro.props
+const config = defaults[shape]
+const stroke = color ?? config.color
+const width = strokeWidth ?? config.width
+---
+
+<svg aria-hidden='true' class:list={['sketch', className]} preserveAspectRatio={shape === 'arrow' ? undefined : 'none'} viewBox={config.viewBox}>
+  {shape === 'underline' && <path d='M3 9 C 40 2, 80 13, 120 7 S 190 3, 217 8' pathLength='1' stroke={stroke} stroke-width={width} />}
+  {shape === 'circle' && <path d='M20 8 C 70 -2, 150 6, 154 28 C 158 52, 60 58, 18 50 C -6 44, 4 14, 34 9' pathLength='1' stroke={stroke} stroke-width={width} />}
+  {shape === 'arrow' && (
+    <>
+      <path d='M8 8 C 20 40, 40 50, 70 46' pathLength='1' stroke={stroke} stroke-width={width} />
+      <path d='M60 38 L71 46 L60 53' pathLength='1' stroke={stroke} stroke-width={width} style='--draw-delay: 1s' />
+    </>
+  )}
+  {shape === 'squiggle' && <path d='M2 10 C 120 4, 240 16, 360 9 S 600 4, 718 11' pathLength='1' stroke={stroke} stroke-width={width} />}
+</svg>

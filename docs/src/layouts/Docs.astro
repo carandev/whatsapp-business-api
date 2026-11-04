@@ -1,0 +1,41 @@
+---
+import Base from './Base.astro'
+import Header from '../components/Header.astro'
+import Sidebar from '../components/Sidebar.astro'
+
+export interface TocItem { depth: number; slug: string; text: string }
+interface Props {
+  title: string
+  description: string
+  eyebrow: string
+  section: 'guides' | 'api'
+  toc?: TocItem[]
+  lead?: string
+}
+
+const { title, description, eyebrow, section, toc = [], lead } = Astro.props
+const current = Astro.url.pathname
+---
+
+<Base description={description} title={title}>
+  <Header section={section} withMenu />
+  <div class:list={['docs', { 'docs--no-toc': toc.length === 0 }]}>
+    <Sidebar current={current} />
+    <main id='content'>
+      <header class='page-head'>
+        <span class='eyebrow'>{eyebrow}</span>
+        <h1 set:html={title} />
+        {lead && <p class='page-head__lead' set:html={lead} />}
+      </header>
+      <slot />
+    </main>
+    {toc.length > 0 && (
+      <nav aria-label='On this page' class='toc'>
+        <p class='toc__title'>On this page</p>
+        <ul class='toc__list'>
+          {toc.map(item => <li><a class:list={['toc__link', `toc__link--${item.depth}`]} href={`#${item.slug}`}>{item.text}</a></li>)}
+        </ul>
+      </nav>
+    )}
+  </div>
+</Base>

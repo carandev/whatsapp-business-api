@@ -12,8 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\WhatsAppCloudApi\WhatsAppCloudApi.csproj" />
-    <ProjectReference Include="..\..\src\WhatsAppCloudApi.Extensions.DependencyInjection\WhatsAppCloudApi.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="..\..\src\Carandev.WhatsApp.Sdk\Carandev.WhatsApp.Sdk.csproj" />
   </ItemGroup>
 
   <ItemGroup>

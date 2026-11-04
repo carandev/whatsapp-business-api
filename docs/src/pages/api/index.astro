@@ -1,0 +1,31 @@
+---
+import Docs from '../../layouts/Docs.astro'
+import { linkify, loadApi, namespaceSlug, typeUrl } from '../../lib/api'
+
+const namespaces = loadApi()
+const total = namespaces.reduce((sum, ns) => sum + ns.types.length, 0)
+const toc = namespaces.map(ns => ({ depth: 2, slug: namespaceSlug(ns.name), text: ns.name.replace(/^Carandev\.WhatsApp\.Sdk\.?/, '') || 'Root' }))
+---
+
+<Docs
+  description='Every public type in Carandev.WhatsApp.Sdk, generated from the XML documentation.'
+  eyebrow='Reference'
+  lead={`Every public type in the package (${total} types across ${namespaces.length} namespaces), generated from the source XML documentation.`}
+  section='api'
+  title='API reference'
+  toc={toc}
+>
+  {namespaces.map(ns => (
+    <section class='api-ns' id={namespaceSlug(ns.name)}>
+      <h2>{ns.name}</h2>
+      <div class='api-grid'>
+        {ns.types.map(type => (
+          <a class='api-card' href={typeUrl(type.Slug)}>
+            <span class='api-card__name'>{type.Name}<span class:list={['kind', `kind--${type.Kind.replace(' ', '-')}`]}>{type.Kind}</span></span>
+            {type.Summary && <p class='api-card__summary' set:html={linkify(type.Summary).replace(/<a [^>]*>|<\/a>/g, '')} />}
+          </a>
+        ))}
+      </div>
+    </section>
+  ))}
+</Docs>

@@ -1,0 +1,56 @@
+---
+import '../styles/tokens.css'
+import '../styles/docs.css'
+
+interface Props { title: string; description: string }
+const { title, description } = Astro.props
+const fullTitle = title === 'Carandev.WhatsApp.Sdk' ? title : `${title} | Carandev.WhatsApp.Sdk`
+const canonical = new URL(Astro.url.pathname, Astro.site)
+---
+
+<!doctype html>
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta content='width=device-width, initial-scale=1.0' name='viewport' />
+    <link href='https://avatars.githubusercontent.com/u/72842040' rel='icon' />
+    <link href='https://fonts.googleapis.com' rel='preconnect' />
+    <link crossorigin href='https://fonts.gstatic.com' rel='preconnect' />
+    <link href='https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Marcellus&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap' rel='stylesheet' />
+    <title>{fullTitle}</title>
+    <meta content={description} name='description' />
+    <meta content='Carlos Gómez' name='author' />
+    <meta content='#FAF7F2' name='theme-color' />
+    <link href={canonical} rel='canonical' />
+    <meta content='website' property='og:type' />
+    <meta content={canonical} property='og:url' />
+    <meta content={fullTitle} property='og:title' />
+    <meta content={description} property='og:description' />
+    <script is:inline>
+      // Apply the theme before first paint to avoid a flash of the wrong colors.
+      (() => {
+        const root = document.documentElement
+        const media = window.matchMedia('(prefers-color-scheme: dark)')
+        const meta = document.querySelector('meta[name="theme-color"]')
+        let stored = null
+        try { stored = localStorage.getItem('theme') } catch {}
+        const apply = (theme) => {
+          root.dataset.theme = theme
+          meta?.setAttribute('content', theme === 'dark' ? '#1A1513' : '#FAF7F2')
+        }
+        apply(stored === 'dark' || stored === 'light' ? stored : (media.matches ? 'dark' : 'light'))
+        media.addEventListener('change', (e) => {
+          let saved = null
+          try { saved = localStorage.getItem('theme') } catch {}
+          if (!saved) apply(e.matches ? 'dark' : 'light')
+        })
+      })()
+    </script>
+  </head>
+  <body>
+    <slot />
+    <script>
+      import '../scripts/site'
+    </script>
+  </body>
+</html>

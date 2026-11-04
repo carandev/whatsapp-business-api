@@ -1,0 +1,82 @@
+---
+import Docs from '../../layouts/Docs.astro'
+import { linkify, loadApi, plain, type MemberDoc, type TypeDoc } from '../../lib/api'
+
+export function getStaticPaths () {
+  return loadApi().flatMap(ns => ns.types.map(type => ({ params: { slug: type.Slug }, props: { type } })))
+}
+
+const { type } = Astro.props as { type: TypeDoc }
+const groups: Array<{ kind: MemberDoc['Kind']; title: string }> = [
+  { kind: 'constructor', title: 'Constructors' },
+  { kind: 'property', title: 'Properties' },
+  { kind: 'method', title: 'Methods' },
+  { kind: 'field', title: type.Kind === 'enum' ? 'Values' : 'Fields' }
+]
+const sections = groups
+  .map(group => ({ ...group, members: type.Members.filter(m => m.Kind === group.kind) }))
+  .filter(group => group.members.length > 0)
+const anchor = (member: MemberDoc, index: number) => `${member.Kind}-${member.Name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}${index > 0 ? `-${index}` : ''}`
+const anchored = sections.map(section => {
+  const seen = new Map<string, number>()
+  return {
+    ...section,
+    members: section.members.map(member => {
+      const count = seen.get(member.Name) ?? 0
+      seen.set(member.Name, count + 1)
+      return { member, id: anchor(member, count) }
+    })
+  }
+})
+const toc = anchored.flatMap(section => [
+  { depth: 2, slug: section.kind, text: section.title },
+  ...(type.Kind === 'enum' ? [] : section.members.map(({ member, id }) => ({ depth: 3, slug: id, text: member.Name })))
+])
+---
+
+<Docs
+  description={plain(type.Summary) || `${type.Name} in ${type.Namespace}`}
+  eyebrow={`${type.Kind} · ${type.Namespace}`}
+  lead={linkify(type.Summary)}
+  section='api'
+  title={type.Name.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+  toc={toc}
+>
+  <div class='prose'>
+    <div class='declaration code-block'><pre><code>{type.Declaration}</code></pre></div>
+    {type.Remarks && <div set:html={linkify(type.Remarks)} />}
+
+    {anchored.map(section => (
+      <section>
+        <h2 id={section.kind}>{section.title}</h2>
+        {section.members.map(({ member, id }) => (
+          <div class='member'>
+            <h3 class='member__name' id={id}>{member.Name}</h3>
+            {type.Kind !== 'enum' && <div class='code-block'><pre><code>{member.Signature}</code></pre></div>}
+            <div class='member__doc'>
+              {member.Summary ? <p set:html={linkify(member.Summary)} /> : <p class='muted'>Inherited; see the base type documentation.</p>}
+              {member.Remarks && <div set:html={linkify(member.Remarks)} />}
+            </div>
+            {(member.Params.length > 0 || member.Returns || member.Exceptions.length > 0) && (
+              <dl>
+                {member.Params.length > 0 && (
+                  <>
+                    <dt>Parameters</dt>
+                    <dd><ul class='param-list'>{member.Params.map(p => <li><code>{p.Name}</code> <span set:html={linkify(p.Text)} /></li>)}</ul></dd>
+                  </>
+                )}
+                {member.Returns && (<><dt>Returns</dt><dd set:html={linkify(member.Returns)} /></>)}
+                {member.Exceptions.length > 0 && (
+                  <>
+                    <dt>Exceptions</dt>
+                    <dd><ul class='param-list'>{member.Exceptions.map(e => <li><code>{e.Name}</code> <span set:html={linkify(e.Text)} /></li>)}</ul></dd>
+                  </>
+                )}
+              </dl>
+            )}
+          </div>
+        ))}
+      </section>
+    ))}
+  </div>
+</Docs>

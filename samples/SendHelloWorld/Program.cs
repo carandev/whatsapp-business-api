@@ -2,10 +2,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using WhatsAppCloudApi;
-using WhatsAppCloudApi.Clients;
-using WhatsAppCloudApi.Exceptions;
-using WhatsAppCloudApi.Extensions.DependencyInjection;
+using Carandev.WhatsApp.Sdk;
+using Carandev.WhatsApp.Sdk.Clients;
+using Carandev.WhatsApp.Sdk.Exceptions;
+using Carandev.WhatsApp.Sdk.DependencyInjection;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -38,7 +38,7 @@ var messagesClient = host.Services.GetRequiredService<IWhatsAppMessagesClient>()
 
 try
 {
-    var result = await messagesClient.SendTextAsync(recipientPhoneNumber!, "Hello from WhatsAppCloudApi SDK!");
+    var result = await messagesClient.SendTextAsync(recipientPhoneNumber!, "Hello from Carandev.WhatsApp.Sdk!");
 
     if (result.IsSuccess)
     {
