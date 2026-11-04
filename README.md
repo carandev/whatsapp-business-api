@@ -4,12 +4,9 @@ A .NET SDK for [Meta's WhatsApp Cloud API](https://developers.facebook.com/docs/
 
 Targets `net8.0` and `net9.0`.
 
-## Packages
+## Package
 
-| Package | Purpose |
-|---|---|
-| `Carandev.WhatsAppCloudApi` | Core client, resource clients, models, webhook payloads and signature validation, the `Result<T>`/`WhatsAppException` error surface, and `AddWhatsAppCloudApi(...)` — registers every resource client plus the retry/resilience pipeline. |
-| `Carandev.WhatsAppCloudApi.Extensions.AspNetCore` | `UseWhatsAppWebhooks(...)` middleware for receiving inbound webhook events. |
+Everything ships in a single NuGet package, `Carandev.WhatsAppCloudApi`: the core client, resource clients, models, the `Result<T>`/`WhatsAppException` error surface, `AddWhatsAppCloudApi(...)` (registers every resource client plus the retry/resilience pipeline), and host-agnostic webhook processing.
 
 ## Quickstart
 
@@ -21,7 +18,7 @@ The fastest way to see the SDK work end-to-end is to run the included [`samples/
 dotnet add package Carandev.WhatsAppCloudApi
 ```
 
-Add `Carandev.WhatsAppCloudApi.Extensions.AspNetCore` too if you also need to receive inbound webhooks (see [Receiving webhooks](#receiving-webhooks) below).
+The same package covers receiving inbound webhooks (see [Receiving webhooks](#receiving-webhooks) below).
 
 ### 2. Configure
 
@@ -112,19 +109,37 @@ catch (WhatsAppException ex)
 
 ## Receiving webhooks
 
-Add the `Carandev.WhatsAppCloudApi.Extensions.AspNetCore` package to an ASP.NET Core app, configure `WhatsApp:AppSecret` and `WhatsApp:WebhookVerifyToken` alongside `AccessToken`/`PhoneNumberId`, then wire the middleware:
+Webhook support ships in the same `Carandev.WhatsAppCloudApi` package and does not depend on ASP.NET Core. `IWhatsAppWebhookProcessor` (registered by `AddWhatsAppCloudApi`) does the protocol work: the subscription handshake, `X-Hub-Signature-256` validation against `WhatsAppOptions.AppSecret`, payload parsing, and dispatch to your `WhatsAppWebhookHandlers`. You own the endpoint, so routing, authentication, DI scopes, and inline-vs-queued processing stay under your control.
+
+Configure `WhatsApp:AppSecret` and `WhatsApp:WebhookVerifyToken` alongside `AccessToken`/`PhoneNumberId`, then map two endpoints. With ASP.NET Core Minimal APIs:
 
 ```csharp
-using WhatsAppCloudApi.Extensions.AspNetCore;
+using WhatsAppCloudApi.Extensions.DependencyInjection;
 using WhatsAppCloudApi.Models.Webhooks;
+using WhatsAppCloudApi.Webhooks;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddWhatsAppCloudApi(builder.Configuration);
-builder.Services.Configure<WhatsAppOptions>(builder.Configuration.GetSection(WhatsAppOptions.SectionName));
+builder.Services.AddScoped<MyWebhookHandlers>();
 
 var app = builder.Build();
 
-app.UseWhatsAppWebhooks("/webhooks/whatsapp", new MyWebhookHandlers());
+// Subscription handshake: echo hub.challenge when hub.verify_token matches.
+app.MapGet("/webhooks/whatsapp", (HttpRequest request, IWhatsAppWebhookProcessor processor) =>
+    processor.VerifySubscription(request.Query["hub.verify_token"], request.Query["hub.challenge"]) is { } challenge
+        ? Results.Text(challenge)
+        : Results.StatusCode(StatusCodes.Status403Forbidden));
+
+// Event delivery: read the RAW body (the signature covers its exact bytes), then process it.
+app.MapPost("/webhooks/whatsapp", async (HttpRequest request, IWhatsAppWebhookProcessor processor, MyWebhookHandlers handlers, CancellationToken cancellationToken) =>
+{
+    using var reader = new StreamReader(request.Body);
+    var rawBody = await reader.ReadToEndAsync(cancellationToken);
+
+    var result = await processor.ProcessAsync(rawBody, request.Headers["X-Hub-Signature-256"], handlers, cancellationToken);
+
+    return result == WebhookProcessingResult.InvalidSignature ? Results.Unauthorized() : Results.Ok();
+});
 
 app.Run();
 
@@ -154,7 +169,21 @@ sealed class MyWebhookHandlers : WhatsAppWebhookHandlers
 }
 ```
 
-`UseWhatsAppWebhooks` handles both the subscription GET handshake (echoing `hub.challenge` when `hub.verify_token` matches `WhatsAppOptions.WebhookVerifyToken`) and POST delivery (verifying the `X-Hub-Signature-256` header against `WhatsAppOptions.AppSecret` before parsing). `WhatsAppWebhookHandlers` methods are all `virtual` with no-op defaults, so override only what you need; a per-item exception from `OnMessageAsync`/`OnStatusAsync` is routed to `OnErrorAsync` instead of aborting the rest of the batch. See the [webhook setup guide](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks) for configuring the callback URL and verify token in the Meta App Dashboard.
+`WhatsAppWebhookHandlers` methods are all `virtual` with no-op defaults, so override only what you need. A per-item exception from `OnMessageAsync`/`OnStatusAsync` is routed to `OnErrorAsync` instead of aborting the rest of the batch.
+
+`ProcessAsync` returns a `WebhookProcessingResult`:
+
+| Result | Meaning | Suggested response |
+|---|---|---|
+| `Processed` | Every message/status item was dispatched. | `200 OK` |
+| `InvalidSignature` | Missing or wrong `X-Hub-Signature-256`, or no `AppSecret` configured. No handler ran. | `401 Unauthorized` |
+| `InvalidPayload` | The body is not a webhook envelope; `OnErrorAsync` received the parsing exception. | `200 OK`, so Meta does not retry a payload that will never parse |
+
+### Queued processing
+
+Meta expects a fast `200 OK`, and slow handlers lead to redelivery. To acknowledge first and handle later, split the two steps: call `processor.IsValidSignature(rawBody, signatureHeader)` in the endpoint, enqueue `rawBody`, return `200 OK`, and have your worker call `processor.DispatchAsync(rawBody, handlers, cancellationToken)`. The same calls work from Azure Functions, AWS Lambda, or MVC controllers.
+
+See the [webhook setup guide](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks) for configuring the callback URL and verify token in the Meta App Dashboard.
 
 ## Meta documentation references
 

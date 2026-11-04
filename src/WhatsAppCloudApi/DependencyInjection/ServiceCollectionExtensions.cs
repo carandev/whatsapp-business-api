@@ -6,6 +6,7 @@ using Polly;
 using WhatsAppCloudApi;
 using WhatsAppCloudApi.Clients;
 using WhatsAppCloudApi.Extensions.DependencyInjection.Resilience;
+using WhatsAppCloudApi.Webhooks;
 
 namespace WhatsAppCloudApi.Extensions.DependencyInjection;
 
@@ -70,6 +71,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IWhatsAppPhoneNumbersClient, WhatsAppPhoneNumbersClient>();
         services.AddTransient<IWhatsAppBusinessProfileClient, WhatsAppBusinessProfileClient>();
         services.AddTransient<IWhatsAppWebhooksClient, WhatsAppWebhooksClient>();
+        services.AddSingleton<IWhatsAppWebhookProcessor, WhatsAppWebhookProcessor>();
 
         return services;
     }

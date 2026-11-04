@@ -12,6 +12,7 @@ using WhatsAppCloudApi.Extensions.DependencyInjection;
 using WhatsAppCloudApi.Extensions.DependencyInjection.Resilience;
 using WhatsAppCloudApi.Serialization;
 using WhatsAppCloudApi.Tests.Fakes;
+using WhatsAppCloudApi.Webhooks;
 
 namespace WhatsAppCloudApi.Tests;
 
@@ -75,6 +76,17 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetRequiredService<IWhatsAppPhoneNumbersClient>());
         Assert.NotNull(provider.GetRequiredService<IWhatsAppBusinessProfileClient>());
         Assert.NotNull(provider.GetRequiredService<IWhatsAppWebhooksClient>());
+    }
+
+    [Fact]
+    public void WebhookProcessor_ResolvesAsSingleton()
+    {
+        using var provider = BuildProvider(out _);
+
+        var first = provider.GetRequiredService<IWhatsAppWebhookProcessor>();
+
+        Assert.IsType<WhatsAppWebhookProcessor>(first);
+        Assert.Same(first, provider.GetRequiredService<IWhatsAppWebhookProcessor>());
     }
 
     [Fact]

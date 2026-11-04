@@ -1,7 +1,7 @@
-using WhatsAppCloudApi.Extensions.AspNetCore;
+using WhatsAppCloudApi.Webhooks;
 using WhatsAppCloudApi.Models.Webhooks;
 
-namespace WhatsAppCloudApi.Extensions.AspNetCore.Tests;
+namespace WhatsAppCloudApi.Tests.Webhooks;
 
 public class WhatsAppWebhookHandlersTests
 {

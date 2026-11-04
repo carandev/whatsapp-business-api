@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>.NET SDK for Meta's WhatsApp Cloud API: typed clients, webhook models and signature validation, plus AddWhatsAppCloudApi dependency injection registration with a built-in retry pipeline.</Description>
+    <Description>.NET SDK for Meta's WhatsApp Cloud API: typed clients, host-agnostic webhook verification and dispatch, and AddWhatsAppCloudApi dependency injection registration with a built-in retry pipeline.</Description>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 

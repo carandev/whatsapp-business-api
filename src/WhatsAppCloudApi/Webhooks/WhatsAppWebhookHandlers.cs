@@ -1,6 +1,6 @@
 using WhatsAppCloudApi.Models.Webhooks;
 
-namespace WhatsAppCloudApi.Extensions.AspNetCore;
+namespace WhatsAppCloudApi.Webhooks;
 
 /// <summary>
 /// Base class for handling WhatsApp Cloud API inbound webhook events.
@@ -8,7 +8,7 @@ namespace WhatsAppCloudApi.Extensions.AspNetCore;
 /// <remarks>
 /// All members are <see langword="virtual"/> with no-op default implementations, so a consumer
 /// only needs to override the handlers relevant to their use case. Consumed by
-/// <c>UseWhatsAppWebhooks</c>, which invokes one call per batched item and isolates exceptions
+/// <see cref="IWhatsAppWebhookProcessor"/>, which invokes one call per batched item and isolates exceptions
 /// raised by <see cref="OnMessageAsync"/>/<see cref="OnStatusAsync"/> by routing them to
 /// <see cref="OnErrorAsync"/>.
 /// </remarks>
