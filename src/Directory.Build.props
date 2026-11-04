@@ -1,7 +1,7 @@
 <Project>
 
   <!--
-    Scoped hardening for the published NuGet surface (the single WhatsAppCloudApi
+    Scoped hardening for the published NuGet surface (the single Carandev.WhatsApp.Sdk
     project under src/). Deliberately NOT applied to tests/ or samples/,
     which keep the relaxed root-level settings (see ../Directory.Build.props).
   -->
@@ -25,14 +25,13 @@
   </PropertyGroup>
 
   <!--
-    NuGet package metadata shared by every published package. The bare 'WhatsAppCloudApi'
-    ID is already taken on nuget.org, so package IDs carry the 'Carandev.' prefix while
-    assembly names and namespaces stay unchanged.
+    NuGet package metadata for the published package. The package ID, assembly name, and root
+    namespace all match the project name (Carandev.WhatsApp.Sdk).
     Version defaults to a dev prerelease; the release workflow overrides it from the git tag
     (dotnet pack -p:Version=X.Y.Z).
   -->
   <PropertyGroup>
-    <PackageId>Carandev.$(MSBuildProjectName)</PackageId>
+    <PackageId>$(MSBuildProjectName)</PackageId>
     <Version Condition="'$(Version)' == ''">0.1.0-dev</Version>
     <Authors>Carlos Gomez</Authors>
     <Copyright>Copyright (c) 2026 Carlos Gomez</Copyright>

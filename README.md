@@ -1,4 +1,4 @@
-# WhatsAppCloudApi
+# Carandev.WhatsApp.Sdk
 
 A .NET SDK for [Meta's WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api). Send messages (text, media, templates, interactive), manage business profile/phone number/template resources, and receive inbound webhooks — all through a typed, dependency-injection-friendly client with built-in retry/resilience and structured error handling.
 
@@ -6,7 +6,7 @@ Targets `net8.0` and `net9.0`.
 
 ## Package
 
-Everything ships in a single NuGet package, `Carandev.WhatsAppCloudApi`: the core client, resource clients, models, the `Result<T>`/`WhatsAppException` error surface, `AddWhatsAppCloudApi(...)` (registers every resource client plus the retry/resilience pipeline), and host-agnostic webhook processing.
+Everything ships in a single NuGet package, `Carandev.WhatsApp.Sdk`: the core client, resource clients, models, the `Result<T>`/`WhatsAppException` error surface, `AddWhatsAppCloudApi(...)` (registers every resource client plus the retry/resilience pipeline), and host-agnostic webhook processing.
 
 ## Quickstart
 
@@ -15,7 +15,7 @@ The fastest way to see the SDK work end-to-end is to run the included [`samples/
 ### 1. Install
 
 ```bash
-dotnet add package Carandev.WhatsAppCloudApi
+dotnet add package Carandev.WhatsApp.Sdk
 ```
 
 The same package covers receiving inbound webhooks (see [Receiving webhooks](#receiving-webhooks) below).
@@ -46,7 +46,7 @@ cp appsettings.json appsettings.Local.json   # then edit appsettings.Local.json 
 dotnet run
 ```
 
-Run it from inside `samples/SendHelloWorld` (not the repo root) so `Host.CreateApplicationBuilder` finds `appsettings.json` relative to the current directory. Without real credentials configured, the sample prints a clear "Credentials are not configured" message and exits — it never sends a request or crashes with an unhandled exception. With real credentials, it sends `"Hello from WhatsAppCloudApi SDK!"` to the phone number in `SendHelloWorld:RecipientPhoneNumber` and prints the outcome:
+Run it from inside `samples/SendHelloWorld` (not the repo root) so `Host.CreateApplicationBuilder` finds `appsettings.json` relative to the current directory. Without real credentials configured, the sample prints a clear "Credentials are not configured" message and exits — it never sends a request or crashes with an unhandled exception. With real credentials, it sends `"Hello from Carandev.WhatsApp.Sdk SDK!"` to the phone number in `SendHelloWorld:RecipientPhoneNumber` and prints the outcome:
 
 - **Success** — the sent message's `MessageId`.
 - **Business failure** (`Result<MessageResponse>.Failure`, e.g. invalid recipient) — the full `WhatsAppError` (`Code`/`Subcode`/`Title`/`Message`/`UserTitle`/`UserMessage`/`FbTraceId`).
@@ -61,8 +61,8 @@ See [`samples/SendHelloWorld/Program.cs`](samples/SendHelloWorld/Program.cs) for
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using WhatsAppCloudApi.Clients;
-using WhatsAppCloudApi.Extensions.DependencyInjection;
+using Carandev.WhatsApp.Sdk.Clients;
+using Carandev.WhatsApp.Sdk.DependencyInjection;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -78,7 +78,7 @@ using var host = builder.Build();
 ```csharp
 var messagesClient = host.Services.GetRequiredService<IWhatsAppMessagesClient>();
 
-var result = await messagesClient.SendTextAsync(to: "15551234567", body: "Hello from WhatsAppCloudApi SDK!");
+var result = await messagesClient.SendTextAsync(to: "15551234567", body: "Hello from Carandev.WhatsApp.Sdk SDK!");
 
 if (result.IsSuccess)
 {
@@ -109,14 +109,14 @@ catch (WhatsAppException ex)
 
 ## Receiving webhooks
 
-Webhook support ships in the same `Carandev.WhatsAppCloudApi` package and does not depend on ASP.NET Core. `IWhatsAppWebhookProcessor` (registered by `AddWhatsAppCloudApi`) does the protocol work: the subscription handshake, `X-Hub-Signature-256` validation against `WhatsAppOptions.AppSecret`, payload parsing, and dispatch to your `WhatsAppWebhookHandlers`. You own the endpoint, so routing, authentication, DI scopes, and inline-vs-queued processing stay under your control.
+Webhook support ships in the same `Carandev.WhatsApp.Sdk` package and does not depend on ASP.NET Core. `IWhatsAppWebhookProcessor` (registered by `AddWhatsAppCloudApi`) does the protocol work: the subscription handshake, `X-Hub-Signature-256` validation against `WhatsAppOptions.AppSecret`, payload parsing, and dispatch to your `WhatsAppWebhookHandlers`. You own the endpoint, so routing, authentication, DI scopes, and inline-vs-queued processing stay under your control.
 
 Configure `WhatsApp:AppSecret` and `WhatsApp:WebhookVerifyToken` alongside `AccessToken`/`PhoneNumberId`, then map two endpoints. With ASP.NET Core Minimal APIs:
 
 ```csharp
-using WhatsAppCloudApi.Extensions.DependencyInjection;
-using WhatsAppCloudApi.Models.Webhooks;
-using WhatsAppCloudApi.Webhooks;
+using Carandev.WhatsApp.Sdk.DependencyInjection;
+using Carandev.WhatsApp.Sdk.Models.Webhooks;
+using Carandev.WhatsApp.Sdk.Webhooks;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddWhatsAppCloudApi(builder.Configuration);
