@@ -8,8 +8,7 @@ Targets `net8.0` and `net9.0`.
 
 | Package | Purpose |
 |---|---|
-| `Carandev.WhatsAppCloudApi` | Core client, resource clients, models, and the `Result<T>`/`WhatsAppException` error surface. |
-| `Carandev.WhatsAppCloudApi.Extensions.DependencyInjection` | `AddWhatsAppCloudApi(...)` — registers every resource client plus the retry/resilience pipeline. |
+| `Carandev.WhatsAppCloudApi` | Core client, resource clients, models, webhook payloads and signature validation, the `Result<T>`/`WhatsAppException` error surface, and `AddWhatsAppCloudApi(...)` — registers every resource client plus the retry/resilience pipeline. |
 | `Carandev.WhatsAppCloudApi.Extensions.AspNetCore` | `UseWhatsAppWebhooks(...)` middleware for receiving inbound webhook events. |
 
 ## Quickstart
@@ -20,7 +19,6 @@ The fastest way to see the SDK work end-to-end is to run the included [`samples/
 
 ```bash
 dotnet add package Carandev.WhatsAppCloudApi
-dotnet add package Carandev.WhatsAppCloudApi.Extensions.DependencyInjection
 ```
 
 Add `Carandev.WhatsAppCloudApi.Extensions.AspNetCore` too if you also need to receive inbound webhooks (see [Receiving webhooks](#receiving-webhooks) below).

@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\WhatsAppCloudApi\WhatsAppCloudApi.csproj" />
-    <ProjectReference Include="..\..\src\WhatsAppCloudApi.Extensions.DependencyInjection\WhatsAppCloudApi.Extensions.DependencyInjection.csproj" />
   </ItemGroup>
 
   <ItemGroup>
