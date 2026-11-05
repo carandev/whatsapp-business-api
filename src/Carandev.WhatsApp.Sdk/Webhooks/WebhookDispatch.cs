@@ -43,7 +43,37 @@ internal static class WebhookDispatch
         }
         catch (Exception ex)
         {
+            try
+            {
+                await handlers.OnErrorAsync(ex, context, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception errorHandlerException)
+            {
+                // An exception thrown by OnErrorAsync itself must escape processing unchanged, as in
+                // 0.1.0. Mark it so the change-level wrapper does not route it back to OnErrorAsync.
+                errorHandlerException.Data[RaisedByErrorHandlerKey] = true;
+                throw;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Invokes a batch handler for one change, routing an exception it throws to
+    /// <see cref="WhatsAppWebhookHandlers.OnErrorAsync(Exception, WebhookContext, CancellationToken)"/>
+    /// with the change <paramref name="context"/>. Exceptions raised by <c>OnErrorAsync</c> while
+    /// isolating an item propagate unchanged instead of being reported a second time.
+    /// </summary>
+    internal static async Task InvokeBatchSafelyAsync(Func<Task> batchCall, WebhookContext context, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await batchCall().ConfigureAwait(false);
+        }
+        catch (Exception ex) when (!ex.Data.Contains(RaisedByErrorHandlerKey))
+        {
             await handlers.OnErrorAsync(ex, context, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    private const string RaisedByErrorHandlerKey = "Carandev.WhatsApp.Sdk.Webhooks.RaisedByOnErrorAsync";
 }

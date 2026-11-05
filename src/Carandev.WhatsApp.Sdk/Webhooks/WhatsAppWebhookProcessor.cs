@@ -129,7 +129,7 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
 
         var batchContext = new WebhookBatchContext { WabaId = wabaId, Metadata = payload.Metadata, Contacts = payload.Contacts ?? [] };
         var changeContext = new WebhookContext { WabaId = wabaId, Metadata = payload.Metadata };
-        await WebhookDispatch.InvokeSafelyAsync(() => handlers.OnMessagesBatchAsync(messages, batchContext, cancellationToken), changeContext, handlers, cancellationToken).ConfigureAwait(false);
+        await WebhookDispatch.InvokeBatchSafelyAsync(() => handlers.OnMessagesBatchAsync(messages, batchContext, cancellationToken), changeContext, handlers, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task DispatchStatusesAsync(string? wabaId, JsonElement value, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
@@ -152,6 +152,6 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
 
         var batchContext = new WebhookBatchContext { WabaId = wabaId, Metadata = payload.Metadata };
         var changeContext = new WebhookContext { WabaId = wabaId, Metadata = payload.Metadata };
-        await WebhookDispatch.InvokeSafelyAsync(() => handlers.OnStatusesBatchAsync(statuses, batchContext, cancellationToken), changeContext, handlers, cancellationToken).ConfigureAwait(false);
+        await WebhookDispatch.InvokeBatchSafelyAsync(() => handlers.OnStatusesBatchAsync(statuses, batchContext, cancellationToken), changeContext, handlers, cancellationToken).ConfigureAwait(false);
     }
 }
