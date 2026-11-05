@@ -67,6 +67,7 @@ The exception type is chosen from the Graph error code:
 - Exponential backoff with jitter, starting at 250 ms.
 - Honors the `Retry-After` header when Meta sends one.
 - Stops after `WhatsAppOptions.MaxRetries` retries (default `3`), then throws `WhatsAppException`.
+- Cuts each attempt after `WhatsAppOptions.Timeout` (default 30 seconds) and retries it. When every attempt times out, it throws a transient `WhatsAppException` with `Code` 504. A call can therefore last about `Timeout × (MaxRetries + 1)` plus backoff; pass a `CancellationToken` to bound the total.
 
 Non-transient errors are never retried: they return a `Result` failure immediately.
 

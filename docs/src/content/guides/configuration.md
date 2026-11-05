@@ -14,7 +14,7 @@ order: 2
 | `ApiVersion` | No | `v21.0` | Graph API version. |
 | `BaseUrl` | No | `https://graph.facebook.com/{0}/` | Graph API base URL; `{0}` is replaced with `ApiVersion`. |
 | `MaxRetries` | No | `3` | Retry attempts for transient failures. See [Errors and retries](../errors-and-resilience/). |
-| `Timeout` | No | `00:00:30` | Reserved for a future release; not enforced yet. |
+| `Timeout` | No | `00:00:30` | Timeout for each HTTP attempt; a timed-out attempt is retried up to `MaxRetries`. |
 | `AppSecret` | For webhooks | | Meta app secret used to validate `X-Hub-Signature-256`. |
 | `WebhookVerifyToken` | For webhooks | | Token you choose and enter in the Meta App Dashboard for the subscription handshake. |
 

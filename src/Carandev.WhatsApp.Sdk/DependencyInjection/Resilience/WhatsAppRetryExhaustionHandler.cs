@@ -1,3 +1,5 @@
+using System.Net;
+using Polly.Timeout;
 using Carandev.WhatsApp.Sdk.Exceptions;
 using Carandev.WhatsApp.Sdk.Resilience;
 using Carandev.WhatsApp.Sdk.Serialization;
@@ -21,7 +23,23 @@ public sealed class WhatsAppRetryExhaustionHandler : DelegatingHandler
     /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage response;
+        try
+        {
+            response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (TimeoutRejectedException ex)
+        {
+            // Every attempt exceeded WhatsAppOptions.Timeout. Surface it like any other exhausted
+            // transient failure instead of leaking the Polly exception type. 504 marks it transient.
+            throw WhatsAppExceptionFactory.Create(
+                new WhatsAppError
+                {
+                    Message = "The request timed out on every attempt (WhatsAppOptions.Timeout) after retries were exhausted.",
+                    Code = (int)HttpStatusCode.GatewayTimeout,
+                },
+                ex);
+        }
 
         if (response.IsSuccessStatusCode)
         {

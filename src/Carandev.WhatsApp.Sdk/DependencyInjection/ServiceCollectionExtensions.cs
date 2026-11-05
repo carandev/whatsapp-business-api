@@ -40,6 +40,11 @@ public static class ServiceCollectionExtensions
         {
             var options = provider.GetRequiredService<IOptions<WhatsAppOptions>>().Value;
             httpClient.BaseAddress = new Uri(string.Format(options.BaseUrl, options.ApiVersion));
+
+            // WhatsAppOptions.Timeout is enforced per attempt by the resilience pipeline below.
+            // HttpClient's own timeout (100s by default) would otherwise cut the whole call,
+            // retries included, before MaxRetries is reached.
+            httpClient.Timeout = Timeout.InfiniteTimeSpan;
         })
         // Registered BEFORE (outside) the resilience handler below, so it only sees the pipeline's
         // FINAL post-retry outcome — never an individual retry attempt.
@@ -63,6 +68,11 @@ public static class ServiceCollectionExtensions
                 // backoff above otherwise — no custom DelayGenerator needed.
                 ShouldHandle = args => WhatsAppRetryPredicate.ShouldRetryAsync(args.Outcome.Result, args.Outcome.Exception, args.Context.CancellationToken),
             });
+
+            // Added after (inside) the retry strategy, so the timeout applies to each attempt and a
+            // timed-out attempt surfaces as TimeoutRejectedException, which the retry predicate
+            // treats as transient and retries.
+            builder.AddTimeout(options.Timeout);
         });
 
         services.AddTransient<IWhatsAppMessagesClient, WhatsAppMessagesClient>();

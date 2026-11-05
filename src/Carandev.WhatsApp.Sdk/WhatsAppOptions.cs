@@ -50,7 +50,12 @@ public sealed class WhatsAppOptions
     public int MaxRetries { get; set; } = 3;
 
     /// <summary>
-    /// The HTTP request timeout. Not yet enforced by this scaffold; reserved for a future release.
+    /// The timeout for each HTTP attempt, enforced by the resilience pipeline that
+    /// <c>AddWhatsAppCloudApi</c> registers. A timed-out attempt is retried like any other
+    /// transient failure, up to <see cref="MaxRetries"/>; when every attempt times out, a
+    /// transient <see cref="Exceptions.WhatsAppException"/> with code 504 is thrown. The total
+    /// duration of a call can therefore reach about <c>Timeout × (MaxRetries + 1)</c> plus backoff;
+    /// pass a <see cref="CancellationToken"/> to bound it.
     /// </summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
 
