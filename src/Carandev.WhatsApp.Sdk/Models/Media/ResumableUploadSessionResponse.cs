@@ -14,4 +14,11 @@ public sealed class ResumableUploadSessionResponse
     /// </summary>
     [JsonPropertyName("id")]
     public string? Id { get; set; }
+
+    /// <summary>
+    /// The number of bytes Meta has already received for the session, returned when the session
+    /// is queried with <c>GET /upload:&lt;session&gt;</c>.
+    /// </summary>
+    [JsonPropertyName("file_offset")]
+    public long? FileOffset { get; set; }
 }

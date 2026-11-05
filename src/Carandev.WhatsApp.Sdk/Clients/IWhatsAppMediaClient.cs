@@ -159,9 +159,11 @@ public interface IWhatsAppMediaClient
     /// <c>Authorization: OAuth &lt;token&gt;</c> and <c>file_offset: 0</c>.
     /// </summary>
     /// <remarks>
-    /// Resuming an interrupted upload from a non-zero <c>file_offset</c> is not automatic: a
-    /// failed upload request is retried only by the configured retry pipeline, and otherwise
-    /// returns a failed <see cref="Result{T}"/>. Call this method again to start a new session.
+    /// If the upload request fails, the session is queried once with
+    /// <c>GET /upload:&lt;session&gt;</c>. When Meta reports that part of the file arrived
+    /// (<c>0 &lt; file_offset &lt; length</c>), the remaining bytes are sent once from that offset;
+    /// otherwise, or if that resumed upload also fails, a failed <see cref="Result{T}"/> carries the
+    /// upload's error. The caller keeps ownership of <paramref name="content"/>; it is not disposed.
     /// The default implementation throws <see cref="NotSupportedException"/>, so implementations
     /// written before this member existed keep compiling.
     /// </remarks>

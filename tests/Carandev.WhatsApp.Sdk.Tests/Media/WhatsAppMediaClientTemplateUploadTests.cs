@@ -185,7 +185,81 @@ public class WhatsAppMediaClientTemplateUploadTests
         Assert.False(result.IsSuccess);
         Assert.Equal("Invalid file", result.Error!.Message);
         Assert.Equal(1, result.Error.Code);
-        Assert.Equal(2, requests.Count);
+
+        // After the failed upload the session is queried once for resumable progress; its error
+        // is not surfaced, the upload's is.
+        Assert.Equal(3, requests.Count);
+        Assert.Equal(HttpMethod.Get, requests[2].Method);
+    }
+
+    [Fact]
+    public async Task UploadTemplateMediaAsync_ResumesFromReportedOffset_AfterFailedUpload()
+    {
+        var options = CreateOptions();
+        var (client, requests) = CreateClient(options, n => n switch
+        {
+            1 => JsonResponse(HttpStatusCode.OK, $$"""{"id":"{{SessionId}}"}"""),
+            2 => JsonResponse(HttpStatusCode.InternalServerError, """{"error":{"message":"Connection reset","type":"OAuthException","code":2}}"""),
+            3 => JsonResponse(HttpStatusCode.OK, $$"""{"id":"{{SessionId}}","file_offset":3}"""),
+            _ => JsonResponse(HttpStatusCode.OK, $$"""{"h":"{{Handle}}"}"""),
+        });
+
+        var result = await client.UploadTemplateMediaAsync(new MemoryStream([1, 2, 3, 4, 5, 6]), "image/png", "a.png");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(Handle, result.Value);
+        Assert.Equal(4, requests.Count);
+
+        var status = requests[2];
+        Assert.Equal(HttpMethod.Get, status.Method);
+        Assert.Equal(BaseAddress(options) + SessionId, status.Uri.ToString());
+        Assert.Equal("OAuth", status.AuthScheme);
+
+        var resumed = requests[3];
+        Assert.Equal(HttpMethod.Post, resumed.Method);
+        Assert.Equal(BaseAddress(options) + SessionId, resumed.Uri.ToString());
+        Assert.Equal("OAuth", resumed.AuthScheme);
+        Assert.Equal("test-access-token", resumed.AuthParameter);
+        Assert.Equal("3", resumed.FileOffset);
+        Assert.Equal("image/png", resumed.ContentType);
+        Assert.Equal(new byte[] { 4, 5, 6 }, resumed.Body);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    public async Task UploadTemplateMediaAsync_DoesNotResume_WhenSessionReportsNoPartialProgress(long reportedOffset)
+    {
+        var (client, requests) = CreateClient(CreateOptions(), n => n switch
+        {
+            1 => JsonResponse(HttpStatusCode.OK, $$"""{"id":"{{SessionId}}"}"""),
+            2 => JsonResponse(HttpStatusCode.BadRequest, """{"error":{"message":"Invalid file","type":"OAuthException","code":1}}"""),
+            _ => JsonResponse(HttpStatusCode.OK, $$"""{"id":"{{SessionId}}","file_offset":{{reportedOffset}}}"""),
+        });
+
+        var result = await client.UploadTemplateMediaAsync(new MemoryStream([1, 2, 3, 4, 5, 6]), "image/png", "a.png");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Invalid file", result.Error!.Message);
+        Assert.Equal(3, requests.Count);
+    }
+
+    [Fact]
+    public async Task UploadTemplateMediaAsync_ReturnsResumedUploadFailure_WhenResumeAlsoFails()
+    {
+        var (client, requests) = CreateClient(CreateOptions(), n => n switch
+        {
+            1 => JsonResponse(HttpStatusCode.OK, $$"""{"id":"{{SessionId}}"}"""),
+            2 => JsonResponse(HttpStatusCode.InternalServerError, """{"error":{"message":"Connection reset","type":"OAuthException","code":2}}"""),
+            3 => JsonResponse(HttpStatusCode.OK, $$"""{"id":"{{SessionId}}","file_offset":2}"""),
+            _ => JsonResponse(HttpStatusCode.BadRequest, """{"error":{"message":"Offset mismatch","type":"OAuthException","code":100}}"""),
+        });
+
+        var result = await client.UploadTemplateMediaAsync(new MemoryStream([1, 2, 3, 4]), "image/png", "a.png");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Offset mismatch", result.Error!.Message);
+        Assert.Equal(4, requests.Count);
     }
 
     [Fact]

@@ -56,7 +56,7 @@ The same size limits as `UploadAsync` apply, checked before any HTTP call. A non
 
 <aside class="callout callout--note" data-label="Note">
 
-Resuming an interrupted upload is not automatic. Transient failures go through the normal retry policy; any other failure returns a `Result` failure, and you can call `UploadTemplateMediaAsync` again to start a new session.
+If the upload fails, the SDK asks Meta how much of the file arrived and, when part of it did, sends only the remaining bytes, once. Transient failures also go through the normal retry policy. Any other failure returns a `Result` failure, and you can call `UploadTemplateMediaAsync` again to start a new session. The stream you pass in is not disposed.
 
 </aside>
 
