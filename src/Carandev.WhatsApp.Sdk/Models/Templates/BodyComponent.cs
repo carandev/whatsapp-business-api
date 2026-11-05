@@ -20,13 +20,41 @@ public sealed record BodyComponent : TemplateComponent
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="text"/> is null/empty/whitespace, contains malformed
     /// placeholder braces, contains a placeholder that is neither a valid positional nor a valid
-    /// named placeholder, or mixes positional and named placeholders.
+    /// named placeholder, uses a named placeholder with uppercase letters (named placeholders must
+    /// be lowercase letters, digits, and underscores, starting with a letter or underscore), or
+    /// mixes positional and named placeholders.
     /// </exception>
     public BodyComponent(string text)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         ValidatePlaceholders(text);
         Text = text;
+    }
+
+    /// <summary>
+    /// Read path for bodies returned by Meta. Meta already accepted the text and examples, so
+    /// placeholder and example validation is not repeated: a template approved before a rule was
+    /// tightened still reads.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="examples"/> and <paramref name="namedExamples"/> bind to the ignored
+    /// <see cref="Examples"/> and <see cref="NamedExamples"/> properties so the serializer does not
+    /// re-assign them (to null) through their <c>init</c> accessors after construction. They are
+    /// always null on this path; the values come from <paramref name="wireExample"/>.
+    /// </remarks>
+    [JsonConstructor]
+    internal BodyComponent(
+        string text,
+        BodyExample? wireExample,
+        IReadOnlyList<string>? examples = null,
+        IReadOnlyList<NamedParameterExample>? namedExamples = null)
+    {
+        _ = examples;
+        _ = namedExamples;
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        Text = text;
+        _examples = wireExample?.BodyText is { Count: > 0 } rows ? rows[0] : null;
+        _namedExamples = wireExample?.BodyTextNamedParams;
     }
 
     /// <summary>
@@ -81,16 +109,7 @@ public sealed record BodyComponent : TemplateComponent
     [JsonInclude]
     [JsonPropertyName("example")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    internal BodyExample? WireExample
-    {
-        get => BodyExample.From(_examples, _namedExamples);
-        init
-        {
-            // Read path for templates returned by Meta; Meta already validated these examples.
-            _examples = value?.BodyText is { Count: > 0 } rows ? rows[0] : null;
-            _namedExamples = value?.BodyTextNamedParams;
-        }
-    }
+    internal BodyExample? WireExample => BodyExample.From(_examples, _namedExamples);
 
     private static void ValidatePlaceholders(string text)
     {
@@ -98,6 +117,8 @@ public sealed record BodyComponent : TemplateComponent
         {
             throw new ArgumentException("Body text has malformed placeholder braces.", nameof(text));
         }
+
+        TemplatePlaceholders.ThrowIfUppercaseNamedPlaceholder(text, "Body text", nameof(text));
 
         bool? isPositional = null;
 

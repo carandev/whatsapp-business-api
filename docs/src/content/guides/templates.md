@@ -39,6 +39,8 @@ new UrlButton("Track order", "https://example.com/track/{{1}}") { Examples = ["4
 
 Examples must match the placeholders: one value per distinct positional placeholder, in order, or exactly one entry per named placeholder. A mismatch throws an `ArgumentException`.
 
+Named placeholders must be lowercase, as Meta requires: letters `a-z`, digits, and underscores, starting with a letter or underscore (`{{first_name}}`, `{{address_line_2}}`). `BodyComponent` and `TextHeaderComponent` throw an `ArgumentException` for a name such as `{{FirstName}}`. Templates you read back from Meta are not re-validated.
+
 ### Parameter format
 
 `CreateTemplateRequest.ParameterFormat` sets Meta's `parameter_format` (`positional` or `named`). When you leave it null, the request sends `named` if the body or a text header uses named placeholders, and omits the field otherwise; Meta then treats the template as positional.

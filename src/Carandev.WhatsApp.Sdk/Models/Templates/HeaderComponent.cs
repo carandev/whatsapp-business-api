@@ -91,9 +91,15 @@ public sealed record TextHeaderComponent : HeaderComponent
     /// Initializes a new instance of the <see cref="TextHeaderComponent"/> class.
     /// </summary>
     /// <param name="text">The header text. Must not be null, empty, or whitespace.</param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="text"/> is null/empty/whitespace or uses a named placeholder
+    /// with uppercase letters (named placeholders must be lowercase letters, digits, and
+    /// underscores, starting with a letter or underscore).
+    /// </exception>
     public TextHeaderComponent(string text)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        TemplatePlaceholders.ThrowIfUppercaseNamedPlaceholder(text, "Header text", nameof(text));
         Text = text;
     }
 
