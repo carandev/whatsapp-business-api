@@ -1,4 +1,6 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using Carandev.WhatsApp.Sdk.Serialization;
 
 namespace Carandev.WhatsApp.Sdk.Models.Templates;
 
@@ -6,11 +8,15 @@ namespace Carandev.WhatsApp.Sdk.Models.Templates;
 /// Base type for a template's <c>HEADER</c> component: one of <see cref="TextHeaderComponent"/>,
 /// <see cref="ImageHeaderComponent"/>, <see cref="VideoHeaderComponent"/>, or
 /// <see cref="DocumentHeaderComponent"/>, told apart on the wire by Meta's <c>format</c> property.
+/// Templates read from Meta can also carry an <see cref="UnknownHeaderComponent"/>.
 /// </summary>
 /// <remarks>
 /// <see cref="TemplateComponent"/> already discriminates on <c>type</c>, and System.Text.Json does
 /// not apply a nested discriminator, so every header serializes through this base contract:
-/// <c>format</c>, <c>text</c>, and <c>example</c> are written from the concrete header.
+/// <c>format</c>, <c>text</c>, and <c>example</c> are written from the concrete header. Reading
+/// goes the other way: <see cref="Template.Components"/> picks the concrete header from
+/// <c>format</c> (<c>TEXT</c>, <c>IMAGE</c>, <c>VIDEO</c>, or <c>DOCUMENT</c>, matched without regard
+/// to case) and maps anything else to <see cref="UnknownHeaderComponent"/>.
 /// </remarks>
 public abstract record HeaderComponent : TemplateComponent
 {
@@ -23,7 +29,7 @@ public abstract record HeaderComponent : TemplateComponent
     /// </summary>
     [JsonInclude]
     [JsonPropertyName("format")]
-    internal abstract string Format { get; }
+    internal abstract string WireFormat { get; }
 
     /// <summary>
     /// The header text, written only for text headers.
@@ -40,6 +46,37 @@ public abstract record HeaderComponent : TemplateComponent
     [JsonPropertyName("example")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     internal abstract HeaderExample? WireExample { get; }
+
+    /// <summary>
+    /// Builds the concrete header for a <c>HEADER</c> object returned by Meta. Meta already
+    /// accepted this data, so placeholder and example validation is not repeated.
+    /// </summary>
+    internal static HeaderComponent FromWire(JsonElement element)
+    {
+        var format = GetString(element, "format") ?? string.Empty;
+        var example = element.TryGetProperty("example", out var exampleElement)
+            && exampleElement.ValueKind == JsonValueKind.Object
+                ? JsonSerializer.Deserialize(exampleElement, WhatsAppJsonSerializerContext.Default.HeaderExample)
+                : null;
+        var handle = example?.HeaderHandle is { Count: > 0 } handles ? handles[0] : null;
+        var hasHandle = !string.IsNullOrWhiteSpace(handle);
+        var text = GetString(element, "text");
+
+        return format.ToUpperInvariant() switch
+        {
+            "TEXT" when !string.IsNullOrWhiteSpace(text) =>
+                TextHeaderComponent.FromWire(text, example?.HeaderText, example?.HeaderTextNamedParams),
+            "IMAGE" when hasHandle => new ImageHeaderComponent(handle!),
+            "VIDEO" when hasHandle => new VideoHeaderComponent(handle!),
+            "DOCUMENT" when hasHandle => new DocumentHeaderComponent(handle!),
+            _ => new UnknownHeaderComponent(format),
+        };
+    }
+
+    private static string? GetString(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
 }
 
 /// <summary>
@@ -54,10 +91,26 @@ public sealed record TextHeaderComponent : HeaderComponent
     /// Initializes a new instance of the <see cref="TextHeaderComponent"/> class.
     /// </summary>
     /// <param name="text">The header text. Must not be null, empty, or whitespace.</param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="text"/> is null/empty/whitespace or uses a named placeholder
+    /// with uppercase letters (named placeholders must be lowercase letters, digits, and
+    /// underscores, starting with a letter or underscore).
+    /// </exception>
     public TextHeaderComponent(string text)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        TemplatePlaceholders.ThrowIfUppercaseNamedPlaceholder(text, "Header text", nameof(text));
         Text = text;
+    }
+
+    private TextHeaderComponent(
+        string text,
+        IReadOnlyList<string>? examples,
+        IReadOnlyList<NamedParameterExample>? namedExamples)
+    {
+        Text = text;
+        _examples = examples;
+        _namedExamples = namedExamples;
     }
 
     /// <summary>
@@ -105,13 +158,25 @@ public sealed record TextHeaderComponent : HeaderComponent
     }
 
     /// <inheritdoc />
-    internal override string Format => "TEXT";
+    internal override string WireFormat => "TEXT";
 
     /// <inheritdoc />
     internal override string? WireText => Text;
 
     /// <inheritdoc />
     internal override HeaderExample? WireExample => HeaderExample.ForText(_examples, _namedExamples);
+
+    /// <summary>
+    /// Read path for a text header returned by Meta: skips the validation Meta already performed.
+    /// </summary>
+    internal static TextHeaderComponent FromWire(
+        string text,
+        IReadOnlyList<string>? examples,
+        IReadOnlyList<NamedParameterExample>? namedExamples) =>
+        new(
+            text,
+            examples is { Count: > 0 } ? examples : null,
+            namedExamples is { Count: > 0 } ? namedExamples : null);
 }
 
 /// <summary>
@@ -140,7 +205,7 @@ public sealed record ImageHeaderComponent : HeaderComponent
     public string ExampleHandle { get; }
 
     /// <inheritdoc />
-    internal override string Format => "IMAGE";
+    internal override string WireFormat => "IMAGE";
 
     /// <inheritdoc />
     internal override HeaderExample? WireExample => HeaderExample.ForHandle(ExampleHandle);
@@ -172,7 +237,7 @@ public sealed record VideoHeaderComponent : HeaderComponent
     public string ExampleHandle { get; }
 
     /// <inheritdoc />
-    internal override string Format => "VIDEO";
+    internal override string WireFormat => "VIDEO";
 
     /// <inheritdoc />
     internal override HeaderExample? WireExample => HeaderExample.ForHandle(ExampleHandle);
@@ -204,10 +269,42 @@ public sealed record DocumentHeaderComponent : HeaderComponent
     public string ExampleHandle { get; }
 
     /// <inheritdoc />
-    internal override string Format => "DOCUMENT";
+    internal override string WireFormat => "DOCUMENT";
 
     /// <inheritdoc />
     internal override HeaderExample? WireExample => HeaderExample.ForHandle(ExampleHandle);
+}
+
+/// <summary>
+/// A <c>HEADER</c> component read from Meta that the SDK does not model: a format other than
+/// <c>TEXT</c>, <c>IMAGE</c>, <c>VIDEO</c>, or <c>DOCUMENT</c> (for example <c>LOCATION</c> or
+/// <c>GIF</c>), a text header without text, or a media header without a <c>header_handle</c>
+/// example. It keeps the header in <see cref="Template.Components"/> instead of failing the whole
+/// response or silently dropping the component.
+/// </summary>
+/// <remarks>
+/// Only <see cref="Format"/> is kept; any other header fields are not preserved. Serializing it
+/// writes <c>{"type":"HEADER","format":"&lt;Format&gt;"}</c>, which is the complete shape of a
+/// <c>LOCATION</c> header. The SDK creates it only when reading templates.
+/// </remarks>
+public sealed record UnknownHeaderComponent : HeaderComponent
+{
+    internal UnknownHeaderComponent(string format)
+    {
+        Format = format;
+    }
+
+    /// <summary>
+    /// Meta's <c>format</c> value exactly as returned, for example <c>LOCATION</c>.
+    /// </summary>
+    [JsonIgnore]
+    public string Format { get; }
+
+    /// <inheritdoc />
+    internal override string WireFormat => Format;
+
+    /// <inheritdoc />
+    internal override HeaderExample? WireExample => null;
 }
 
 /// <summary>

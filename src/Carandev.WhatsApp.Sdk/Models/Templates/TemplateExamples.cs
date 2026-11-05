@@ -94,8 +94,35 @@ internal static partial class TemplatePlaceholders
     [GeneratedRegex(@"^[1-9][0-9]*$")]
     internal static partial Regex PositionalPlaceholderPattern();
 
-    [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_]*$")]
+    /// <summary>
+    /// A valid named placeholder. Meta: named parameters are "composed of lowercase characters and
+    /// underscores"; digits are accepted after the first character.
+    /// </summary>
+    [GeneratedRegex(@"^[a-z_][a-z0-9_]*$")]
     internal static partial Regex NamedPlaceholderPattern();
+
+    /// <summary>
+    /// A named placeholder that would be valid if it were lowercase.
+    /// </summary>
+    [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_]*$")]
+    private static partial Regex AnyCaseNamedPlaceholderPattern();
+
+    /// <summary>
+    /// Throws when <paramref name="text"/> contains a named placeholder with uppercase letters.
+    /// </summary>
+    internal static void ThrowIfUppercaseNamedPlaceholder(string text, string subject, string paramName)
+    {
+        foreach (Match match in PlaceholderPattern().Matches(text))
+        {
+            var content = match.Groups[1].Value;
+            if (!NamedPlaceholderPattern().IsMatch(content) && AnyCaseNamedPlaceholderPattern().IsMatch(content))
+            {
+                throw new ArgumentException(
+                    $"{subject} contains the named placeholder '{{{{{content}}}}}' with uppercase letters; named placeholders must be lowercase (a-z, 0-9, and _, starting with a letter or _).",
+                    paramName);
+            }
+        }
+    }
 
     /// <summary>
     /// Validates positional examples against the distinct <c>{{n}}</c> placeholders of

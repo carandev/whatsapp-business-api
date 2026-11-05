@@ -189,6 +189,46 @@ public class ServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public async Task RetryPipeline_MaxRetriesZero_SendsOneAttempt_AndStillThrowsOnTransientFailure()
+    {
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 0);
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        var exception = await Assert.ThrowsAsync<WhatsAppException>(() =>
+            client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics")));
+
+        Assert.Equal(1, handler.RequestCount);
+        Assert.True(exception.IsTransient);
+    }
+
+    [Fact]
+    public async Task RetryPipeline_MaxRetriesZero_StillAppliesTimeout()
+    {
+        var handler = new DelayingHandler(_ => TimeSpan.FromSeconds(30));
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 0, timeout: TimeSpan.FromMilliseconds(100));
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        var exception = await Assert.ThrowsAsync<WhatsAppException>(() =>
+            client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics")));
+
+        Assert.Equal(1, handler.RequestCount);
+        Assert.Equal((int)HttpStatusCode.GatewayTimeout, exception.Code);
+    }
+
+    [Fact]
+    public void Options_NegativeMaxRetries_FailsValidation()
+    {
+        var handler = new RecordingHandler();
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: -1);
+
+        var exception = Assert.Throws<OptionsValidationException>(() =>
+            provider.GetRequiredService<IOptions<WhatsAppOptions>>().Value);
+
+        Assert.Contains(nameof(WhatsAppOptions.MaxRetries), exception.Message);
+    }
+
+    [Fact]
     public async Task RetryPipeline_TransientStatusThenSuccess_RetriesUntilSuccessfulAndReturnsFinalResponse()
     {
         var statuses = new Queue<HttpStatusCode>([HttpStatusCode.ServiceUnavailable, HttpStatusCode.ServiceUnavailable, HttpStatusCode.OK]);

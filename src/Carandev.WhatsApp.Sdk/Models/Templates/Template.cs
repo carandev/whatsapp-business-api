@@ -42,8 +42,13 @@ public sealed class Template
 
     /// <summary>
     /// The template's components. Populated on full fetches (e.g. <c>GetAsync</c>); Meta's create
-    /// response does not echo them back.
+    /// response does not echo them back. A <c>HEADER</c> reads as <see cref="TextHeaderComponent"/>,
+    /// <see cref="ImageHeaderComponent"/>, <see cref="VideoHeaderComponent"/>, or
+    /// <see cref="DocumentHeaderComponent"/> by its <c>format</c>; a header the SDK does not model
+    /// (for example <c>LOCATION</c>) reads as <see cref="UnknownHeaderComponent"/> instead of
+    /// failing the response.
     /// </summary>
     [JsonPropertyName("components")]
+    [JsonConverter(typeof(TemplateComponentListConverter))]
     public IReadOnlyList<TemplateComponent>? Components { get; set; }
 }

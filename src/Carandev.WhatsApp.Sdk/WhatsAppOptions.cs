@@ -53,8 +53,11 @@ public sealed class WhatsAppOptions
     /// <summary>
     /// The maximum number of retry attempts for transient failures (5xx responses and recognized
     /// transient Graph error codes/subcodes). Enforced by the <c>"whatsapp-retry"</c> resilience
-    /// pipeline registered by <c>AddWhatsAppCloudApi</c>.
+    /// pipeline registered by <c>AddWhatsAppCloudApi</c>. <c>0</c> disables retries: each call
+    /// makes one attempt, and a transient failure still throws <see cref="Exceptions.WhatsAppException"/>.
+    /// Negative values fail options validation.
     /// </summary>
+    [Range(0, int.MaxValue)]
     public int MaxRetries { get; set; } = 3;
 
     /// <summary>
