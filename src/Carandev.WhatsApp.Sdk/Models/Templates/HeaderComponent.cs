@@ -47,6 +47,9 @@ public abstract record HeaderComponent : TemplateComponent
 /// </summary>
 public sealed record TextHeaderComponent : HeaderComponent
 {
+    private readonly IReadOnlyList<string>? _examples;
+    private readonly IReadOnlyList<NamedParameterExample>? _namedExamples;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TextHeaderComponent"/> class.
     /// </summary>
@@ -63,6 +66,44 @@ public sealed record TextHeaderComponent : HeaderComponent
     [JsonIgnore]
     public string Text { get; }
 
+    /// <summary>
+    /// Optional example values for the positional placeholders, in order. Serialized as
+    /// <c>"example": { "header_text": [...] }</c>; omitted when null or empty.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the text uses named placeholders, when the count differs from the number of
+    /// distinct positional placeholders, or when a value is null, empty, or whitespace.
+    /// </exception>
+    [JsonIgnore]
+    public IReadOnlyList<string>? Examples
+    {
+        get => _examples;
+        init
+        {
+            TemplatePlaceholders.ValidatePositionalExamples(Text, value, "Header text", nameof(Examples));
+            _examples = value;
+        }
+    }
+
+    /// <summary>
+    /// Optional example values for the named placeholders. Serialized as
+    /// <c>"example": { "header_text_named_params": [...] }</c>; omitted when null or empty.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the text uses positional placeholders, when a name is repeated, or when the
+    /// names differ from the text's named placeholders.
+    /// </exception>
+    [JsonIgnore]
+    public IReadOnlyList<NamedParameterExample>? NamedExamples
+    {
+        get => _namedExamples;
+        init
+        {
+            TemplatePlaceholders.ValidateNamedExamples(Text, value, "Header text", nameof(NamedExamples));
+            _namedExamples = value;
+        }
+    }
+
     /// <inheritdoc />
     internal override string Format => "TEXT";
 
@@ -70,7 +111,7 @@ public sealed record TextHeaderComponent : HeaderComponent
     internal override string? WireText => Text;
 
     /// <inheritdoc />
-    internal override HeaderExample? WireExample => null;
+    internal override HeaderExample? WireExample => HeaderExample.ForText(_examples, _namedExamples);
 }
 
 /// <summary>
@@ -175,6 +216,7 @@ public sealed record DocumentHeaderComponent : HeaderComponent
 /// </summary>
 public sealed record HeaderExample
 {
+    [JsonConstructor]
     internal HeaderExample()
     {
     }
@@ -182,9 +224,43 @@ public sealed record HeaderExample
     /// <summary>
     /// Uploaded media handles for a media header (<c>header_handle</c>).
     /// </summary>
+    [JsonInclude]
     [JsonPropertyName("header_handle")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public IReadOnlyList<string>? HeaderHandle { get; internal init; }
+    public IReadOnlyList<string>? HeaderHandle { get; internal set; }
+
+    /// <summary>
+    /// Positional examples for a text header (<c>header_text</c>).
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("header_text")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? HeaderText { get; internal set; }
+
+    /// <summary>
+    /// Named examples for a text header (<c>header_text_named_params</c>).
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("header_text_named_params")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<NamedParameterExample>? HeaderTextNamedParams { get; internal set; }
 
     internal static HeaderExample ForHandle(string handle) => new() { HeaderHandle = [handle] };
+
+    internal static HeaderExample? ForText(
+        IReadOnlyList<string>? examples,
+        IReadOnlyList<NamedParameterExample>? namedExamples)
+    {
+        if (examples is { Count: > 0 })
+        {
+            return new HeaderExample { HeaderText = examples };
+        }
+
+        if (namedExamples is { Count: > 0 })
+        {
+            return new HeaderExample { HeaderTextNamedParams = namedExamples };
+        }
+
+        return null;
+    }
 }

@@ -26,6 +26,19 @@ var created = await templates.CreateAsync(new CreateTemplateRequest(
 
 The component list is validated locally before any request: it needs exactly one body and at most one header and one footer, otherwise the constructor throws an `ArgumentException`. New templates start in review; check `Template.Status` until Meta approves them.
 
+### Variable examples
+
+Meta reviews templates with variables against example values. Set them with the optional `Examples` (positional) or `NamedExamples` (named) init properties; they are omitted from the request when you leave them out:
+
+```csharp
+new TextHeaderComponent("Order {{1}}") { Examples = ["4521"] };
+new BodyComponent("Hi {{1}}, your order arrives on {{2}}.") { Examples = ["Ana", "May 3"] };
+new BodyComponent("Hi {{first_name}}!") { NamedExamples = [new NamedParameterExample("first_name", "Ana")] };
+new UrlButton("Track order", "https://example.com/track/{{1}}") { Examples = ["4521"] };
+```
+
+Examples must match the placeholders: one value per distinct positional placeholder, in order, or exactly one entry per named placeholder. A mismatch throws an `ArgumentException`.
+
 Button types: `UrlButton`, `PhoneNumberButton`, `QuickReplyButton`, `CopyCodeButton`, `OtpButton`, `CatalogButton`, and `FlowButton`. Headers: `TextHeaderComponent`, `ImageHeaderComponent`, `VideoHeaderComponent`, and `DocumentHeaderComponent`; media headers take an example handle from a resumable upload.
 
 ## List

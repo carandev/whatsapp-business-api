@@ -8,8 +8,11 @@ namespace Carandev.WhatsApp.Sdk.Models.Templates;
 /// (<c>{{1}}</c>, <c>{{2}}</c>, ...) or named placeholders (<c>{{customer_name}}</c>), but not a
 /// mix of both.
 /// </summary>
-public sealed partial record BodyComponent : TemplateComponent
+public sealed record BodyComponent : TemplateComponent
 {
+    private readonly IReadOnlyList<string>? _examples;
+    private readonly IReadOnlyList<NamedParameterExample>? _namedExamples;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BodyComponent"/> class.
     /// </summary>
@@ -32,6 +35,63 @@ public sealed partial record BodyComponent : TemplateComponent
     [JsonPropertyName("text")]
     public string Text { get; }
 
+    /// <summary>
+    /// Optional example values for the positional placeholders, in order: the first value is for
+    /// <c>{{1}}</c>, the second for <c>{{2}}</c>, and so on. Serialized as
+    /// <c>"example": { "body_text": [[...]] }</c>; omitted when null or empty.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the text uses named placeholders, when the count differs from the number of
+    /// distinct positional placeholders, or when a value is null, empty, or whitespace.
+    /// </exception>
+    [JsonIgnore]
+    public IReadOnlyList<string>? Examples
+    {
+        get => _examples;
+        init
+        {
+            TemplatePlaceholders.ValidatePositionalExamples(Text, value, "Body text", nameof(Examples));
+            _examples = value;
+        }
+    }
+
+    /// <summary>
+    /// Optional example values for the named placeholders, one per distinct placeholder name.
+    /// Serialized as <c>"example": { "body_text_named_params": [...] }</c>; omitted when null or
+    /// empty.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the text uses positional placeholders, when a name is repeated, or when the
+    /// names differ from the text's named placeholders.
+    /// </exception>
+    [JsonIgnore]
+    public IReadOnlyList<NamedParameterExample>? NamedExamples
+    {
+        get => _namedExamples;
+        init
+        {
+            TemplatePlaceholders.ValidateNamedExamples(Text, value, "Body text", nameof(NamedExamples));
+            _namedExamples = value;
+        }
+    }
+
+    /// <summary>
+    /// The body example in Meta's wire shape, omitted when no examples were provided.
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("example")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    internal BodyExample? WireExample
+    {
+        get => BodyExample.From(_examples, _namedExamples);
+        init
+        {
+            // Read path for templates returned by Meta; Meta already validated these examples.
+            _examples = value?.BodyText is { Count: > 0 } rows ? rows[0] : null;
+            _namedExamples = value?.BodyTextNamedParams;
+        }
+    }
+
     private static void ValidatePlaceholders(string text)
     {
         if (CountOccurrences(text, "{{") != CountOccurrences(text, "}}"))
@@ -41,11 +101,11 @@ public sealed partial record BodyComponent : TemplateComponent
 
         bool? isPositional = null;
 
-        foreach (Match match in PlaceholderPattern().Matches(text))
+        foreach (Match match in TemplatePlaceholders.PlaceholderPattern().Matches(text))
         {
             var content = match.Groups[1].Value;
-            var positional = PositionalPlaceholderPattern().IsMatch(content);
-            var named = !positional && NamedPlaceholderPattern().IsMatch(content);
+            var positional = TemplatePlaceholders.PositionalPlaceholderPattern().IsMatch(content);
+            var named = !positional && TemplatePlaceholders.NamedPlaceholderPattern().IsMatch(content);
 
             if (!positional && !named)
             {
@@ -80,12 +140,4 @@ public sealed partial record BodyComponent : TemplateComponent
         return count;
     }
 
-    [GeneratedRegex(@"\{\{([^{}]*)\}\}")]
-    private static partial Regex PlaceholderPattern();
-
-    [GeneratedRegex(@"^[1-9][0-9]*$")]
-    private static partial Regex PositionalPlaceholderPattern();
-
-    [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_]*$")]
-    private static partial Regex NamedPlaceholderPattern();
 }
