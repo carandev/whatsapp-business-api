@@ -325,9 +325,30 @@ public class InteractiveMessageSerializationTests
     }
 
     [Fact]
-    public void ListRow_Throws_WhenDescriptionIsNullOrWhiteSpace()
+    public void ListRow_Throws_WhenDescriptionIsEmptyOrWhiteSpace()
     {
         Assert.Throws<ArgumentException>(() => new ListRow("row-1", "Title", "   "));
+        Assert.Throws<ArgumentException>(() => new ListRow("row-1", "Title", string.Empty));
+    }
+
+    [Fact]
+    public void ListRow_AllowsMissingDescription_AndOmitsItFromTheWireShape()
+    {
+        var row = new ListRow("row-1", "Row one");
+        var request = new SendListMessageRequest(
+            "16505551234",
+            "Pick one",
+            "Open list",
+            [new ListSection("Section 1", [row, new ListRow("row-2", "Row two", description: null)])]);
+
+        var json = JsonSerializer.Serialize(request, WhatsAppJsonSerializerContext.Default.SendListMessageRequest);
+
+        Assert.Null(row.Description);
+        Assert.Contains(
+            "\"rows\":[{\"id\":\"row-1\",\"title\":\"Row one\"},{\"id\":\"row-2\",\"title\":\"Row two\"}]",
+            json,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("description", json, StringComparison.Ordinal);
     }
 
     [Fact]

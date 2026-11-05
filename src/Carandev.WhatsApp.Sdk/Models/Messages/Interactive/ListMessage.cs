@@ -4,10 +4,11 @@ namespace Carandev.WhatsApp.Sdk.Models.Messages.Interactive;
 
 /// <summary>
 /// One selectable row within a <see cref="ListSection"/>, identified by an opaque postback
-/// <see cref="Id"/> with a user-facing <see cref="Title"/> and <see cref="Description"/>.
+/// <see cref="Id"/> with a user-facing <see cref="Title"/> and an optional <see cref="Description"/>.
 /// Construction validates synchronously, before any HTTP request is sent: <c>id</c> must not be
-/// null, empty, whitespace, or padded with leading/trailing whitespace; <c>title</c> and
-/// <c>description</c> must not be null, empty, or whitespace.
+/// null, empty, whitespace, or padded with leading/trailing whitespace; <c>title</c> must not be
+/// null, empty, or whitespace; <c>description</c> may be omitted (<see langword="null"/>) but,
+/// when supplied, must not be empty or whitespace.
 /// </summary>
 public sealed record ListRow
 {
@@ -19,13 +20,16 @@ public sealed record ListRow
     /// empty, whitespace, or have leading/trailing whitespace.
     /// </param>
     /// <param name="title">The row's user-facing title. Must not be null, empty, or whitespace.</param>
-    /// <param name="description">The row's user-facing description. Must not be null, empty, or whitespace.</param>
+    /// <param name="description">
+    /// The row's optional user-facing description. <see langword="null"/> omits it from the
+    /// request; when supplied it must not be empty or whitespace.
+    /// </param>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="id"/> is null, empty, whitespace, or has leading/trailing
-    /// whitespace; or when <paramref name="title"/> or <paramref name="description"/> is null,
-    /// empty, or whitespace.
+    /// whitespace; when <paramref name="title"/> is null, empty, or whitespace; or when
+    /// <paramref name="description"/> is supplied but empty or whitespace.
     /// </exception>
-    public ListRow(string id, string title, string description)
+    public ListRow(string id, string title, string? description = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         if (id != id.Trim())
@@ -34,7 +38,10 @@ public sealed record ListRow
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
-        ArgumentException.ThrowIfNullOrWhiteSpace(description);
+        if (description is not null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(description);
+        }
 
         Id = id;
         Title = title;
@@ -54,10 +61,12 @@ public sealed record ListRow
     public string Title { get; }
 
     /// <summary>
-    /// The row's user-facing description.
+    /// The row's optional user-facing description; omitted from the request when
+    /// <see langword="null"/>.
     /// </summary>
     [JsonPropertyName("description")]
-    public string Description { get; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Description { get; }
 }
 
 /// <summary>
