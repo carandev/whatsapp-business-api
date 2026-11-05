@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1](https://github.com/carandev/whatsapp-business-api/compare/v0.2.0...v0.2.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **resilience:** support MaxRetries = 0 and reject negative values ([804e6c4](https://github.com/carandev/whatsapp-business-api/commit/804e6c4d4eb74475ccaa35fa72a61f5e8a6b93b1)), closes [#56](https://github.com/carandev/whatsapp-business-api/issues/56)
+* **templates:** deserialize HEADER components by format ([1c78f2e](https://github.com/carandev/whatsapp-business-api/commit/1c78f2e28b46ec4d6b73521b90d42a4b4f3679e8)), closes [#57](https://github.com/carandev/whatsapp-business-api/issues/57)
+* **templates:** require lowercase named placeholders; uppercase names now throw ([51db721](https://github.com/carandev/whatsapp-business-api/commit/51db721a1df71d30c8c0d18db28c0b58b4249e9c)), closes [#58](https://github.com/carandev/whatsapp-business-api/issues/58)
+
 ## [0.2.0](https://github.com/carandev/whatsapp-business-api/compare/v0.1.0...v0.2.0) (2026-11-05)
 
 
