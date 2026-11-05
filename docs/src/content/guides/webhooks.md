@@ -113,7 +113,34 @@ sealed class InboxHandlers(IInboxRouter inboxes) : WhatsAppWebhookHandlers
 
 `Contact` is the contact whose `wa_id` equals the message's `from`. If none matches and the change carries exactly one contact, that contact is used; otherwise it is `null`.
 
-`OnErrorAsync` receives a `null` context when the whole body cannot be parsed, a context with only `WabaId` when one change cannot be parsed, and the failing item's full context when your handler throws.
+`OnErrorAsync` receives a `null` context when the whole body cannot be parsed, a context with only `WabaId` when one change cannot be parsed, the failing item's full context when a per-item handler throws, and the change's context (no `Contact`) when a batch handler throws.
+
+## Per-item vs batch handlers
+
+Meta groups items: one webhook change can carry several messages or statuses. Choose, per event kind, how you receive them:
+
+- **Per item** (default): override `OnMessageAsync` / `OnStatusAsync`. Each item arrives in its own call with its own `WebhookContext`, and an exception from one item goes to `OnErrorAsync` without stopping the others. Choose this for event-by-event logic such as replying or routing.
+- **Per batch**: override `OnMessagesBatchAsync` / `OnStatusesBatchAsync`. You get one call per change with the whole list and a `WebhookBatchContext` (`WabaId`, `Metadata`, and every `Contacts` entry of the change; `Contacts` is never `null` and always empty for statuses). Choose this to persist in bulk, for example one `INSERT` or one transaction per change.
+
+```csharp
+sealed class BulkInsertHandlers(IMessageStore store) : WhatsAppWebhookHandlers
+{
+    public override async Task OnMessagesBatchAsync(IReadOnlyList<WebhookMessage> messages, WebhookBatchContext context, CancellationToken cancellationToken)
+    {
+        var rows = messages.Select(message => new InboundMessageRow(
+            PhoneNumberId: context.Metadata?.PhoneNumberId,
+            MessageId: message.Id,
+            From: message.From,
+            SenderName: context.Contacts.FirstOrDefault(c => c.WaId == message.From)?.Profile?.Name));
+
+        await store.InsertManyAsync(rows, cancellationToken); // one round-trip per change
+    }
+}
+```
+
+The default batch implementations are what call the per-item handlers. If you override a batch method, the per-item handlers of that kind are no longer called unless your override calls `base.OnMessagesBatchAsync(...)` / `base.OnStatusesBatchAsync(...)`.
+
+**Warning:** a batch override owns its own per-item error handling. Without `base`, nothing isolates one item's failure from the rest of its batch. An exception that escapes the override goes to `OnErrorAsync` with the change's context (`WabaId` and `Metadata`; `Contact` is `null`), and the remaining changes of the delivery are still dispatched.
 
 ## Queued processing
 

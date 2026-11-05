@@ -122,18 +122,14 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
             return;
         }
 
-        if (payload?.Messages is null)
+        if (payload?.Messages is not { Count: > 0 } messages)
         {
             return;
         }
 
+        var batchContext = new WebhookBatchContext { WabaId = wabaId, Metadata = payload.Metadata, Contacts = payload.Contacts ?? [] };
         var changeContext = new WebhookContext { WabaId = wabaId, Metadata = payload.Metadata };
-
-        foreach (var message in payload.Messages)
-        {
-            var context = changeContext with { Contact = ResolveContact(payload.Contacts, message.From) };
-            await InvokeHandlerSafelyAsync(() => handlers.OnMessageAsync(message, context, cancellationToken), context, handlers, cancellationToken).ConfigureAwait(false);
-        }
+        await WebhookDispatch.InvokeSafelyAsync(() => handlers.OnMessagesBatchAsync(messages, batchContext, cancellationToken), changeContext, handlers, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task DispatchStatusesAsync(string? wabaId, JsonElement value, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
@@ -149,50 +145,13 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
             return;
         }
 
-        if (payload?.Statuses is null)
+        if (payload?.Statuses is not { Count: > 0 } statuses)
         {
             return;
         }
 
-        var context = new WebhookContext { WabaId = wabaId, Metadata = payload.Metadata };
-
-        foreach (var status in payload.Statuses)
-        {
-            await InvokeHandlerSafelyAsync(() => handlers.OnStatusAsync(status, context, cancellationToken), context, handlers, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    /// <summary>
-    /// Picks the sender's contact for a message: the one whose <c>wa_id</c> equals the message's
-    /// <c>from</c>; otherwise the change's only contact, if it has exactly one; otherwise none.
-    /// </summary>
-    private static WebhookContact? ResolveContact(IReadOnlyList<WebhookContact>? contacts, string? from)
-    {
-        if (contacts is null || contacts.Count == 0)
-        {
-            return null;
-        }
-
-        foreach (var contact in contacts)
-        {
-            if (string.Equals(contact.WaId, from, StringComparison.Ordinal))
-            {
-                return contact;
-            }
-        }
-
-        return contacts.Count == 1 ? contacts[0] : null;
-    }
-
-    private static async Task InvokeHandlerSafelyAsync(Func<Task> handlerCall, WebhookContext context, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await handlerCall().ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            await handlers.OnErrorAsync(ex, context, cancellationToken).ConfigureAwait(false);
-        }
+        var batchContext = new WebhookBatchContext { WabaId = wabaId, Metadata = payload.Metadata };
+        var changeContext = new WebhookContext { WabaId = wabaId, Metadata = payload.Metadata };
+        await WebhookDispatch.InvokeSafelyAsync(() => handlers.OnStatusesBatchAsync(statuses, batchContext, cancellationToken), changeContext, handlers, cancellationToken).ConfigureAwait(false);
     }
 }
