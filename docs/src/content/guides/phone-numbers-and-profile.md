@@ -21,6 +21,30 @@ foreach (var number in numbers.Value?.Data ?? [])
 var current = await phoneNumbers.GetPhoneNumberAsync();
 ```
 
+### Paging through numbers
+
+A WABA with many numbers returns them in pages. Pass `PhoneNumbersListOptions` and follow `Paging.Cursors.After` until it is `null`:
+
+```csharp
+string? after = null;
+do
+{
+    var page = await phoneNumbers.ListPhoneNumbersAsync(new PhoneNumbersListOptions { Limit = 50, After = after });
+    if (!page.IsSuccess)
+    {
+        break;
+    }
+
+    foreach (var number in page.Value!.Data ?? [])
+    {
+        Console.WriteLine(number.DisplayPhoneNumber);
+    }
+
+    after = page.Value.Paging?.Cursors?.After;
+}
+while (after is not null);
+```
+
 ### Code verification
 
 ```csharp

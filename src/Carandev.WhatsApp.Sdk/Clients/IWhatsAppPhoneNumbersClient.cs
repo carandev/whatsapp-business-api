@@ -27,6 +27,33 @@ public interface IWhatsAppPhoneNumbersClient
     Task<Result<TemplatesPage<PhoneNumber>>> ListPhoneNumbersAsync(string? wabaIdOverride = null, CancellationToken ct = default);
 
     /// <summary>
+    /// Lists one page of the phone numbers registered to a WABA via
+    /// <c>GET /{waba_id}/phone_numbers</c>, with <paramref name="options"/> sent as the
+    /// <c>limit</c>, <c>after</c>, and <c>before</c> query parameters.
+    /// </summary>
+    /// <param name="options">The page size and cursor. Null fields are omitted from the request.</param>
+    /// <param name="wabaIdOverride">
+    /// An optional WABA id that takes precedence over <see cref="WhatsAppOptions.WabaId"/> when
+    /// resolving the target WABA. When omitted, <see cref="WhatsAppOptions.WabaId"/> is used.
+    /// </param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> wrapping a <see cref="TemplatesPage{T}"/> of
+    /// <see cref="PhoneNumber"/>, whose <c>Paging.Cursors.After</c> is the cursor for the next page;
+    /// a failed <see cref="Result{T}"/> when the WABA id cannot be resolved (no HTTP request is sent
+    /// in that case) or the API call fails.
+    /// </returns>
+    /// <remarks>
+    /// The default implementation throws <see cref="NotSupportedException"/> so that third-party
+    /// implementations written against 0.1.0 keep compiling; <see cref="WhatsAppPhoneNumbersClient"/>
+    /// implements it.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">The implementation does not support paging.</exception>
+    Task<Result<TemplatesPage<PhoneNumber>>> ListPhoneNumbersAsync(PhoneNumbersListOptions options, string? wabaIdOverride = null, CancellationToken ct = default) =>
+        throw new NotSupportedException(
+            $"{GetType().FullName} does not implement {nameof(ListPhoneNumbersAsync)} with {nameof(PhoneNumbersListOptions)}. Use WhatsAppPhoneNumbersClient or implement the member.");
+
+    /// <summary>
     /// Fetches a single phone number's details via <c>GET /{phone_number_id}</c>.
     /// </summary>
     /// <param name="phoneNumberIdOverride">
