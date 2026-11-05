@@ -53,21 +53,26 @@ public static class ServiceCollectionExtensions
         {
             var options = context.ServiceProvider.GetRequiredService<IOptions<WhatsAppOptions>>().Value;
 
-            builder.AddRetry(new HttpRetryStrategyOptions
+            // Polly rejects MaxRetryAttempts < 1, so MaxRetries = 0 ("no retries") skips the retry
+            // strategy entirely. The per-attempt timeout and the exhaustion handler still apply.
+            if (options.MaxRetries > 0)
             {
-                MaxRetryAttempts = options.MaxRetries,
-                BackoffType = DelayBackoffType.Exponential,
-                UseJitter = true,
-                // A short starting backoff — Meta's rate-limit/transient-error windows are typically
-                // measured in hundreds of milliseconds to a few seconds, and a short base delay keeps
-                // total request latency reasonable while a real Retry-After header (see below) or
-                // exponential growth on subsequent attempts still provides real backpressure.
-                Delay = TimeSpan.FromMilliseconds(250),
-                // ShouldRetryAfterHeader defaults to true, so the built-in DelayGenerator already
-                // honors a Retry-After header when present and falls back to the exponential+jitter
-                // backoff above otherwise — no custom DelayGenerator needed.
-                ShouldHandle = args => WhatsAppRetryPredicate.ShouldRetryAsync(args.Outcome.Result, args.Outcome.Exception, args.Context.CancellationToken),
-            });
+                builder.AddRetry(new HttpRetryStrategyOptions
+                {
+                    MaxRetryAttempts = options.MaxRetries,
+                    BackoffType = DelayBackoffType.Exponential,
+                    UseJitter = true,
+                    // A short starting backoff — Meta's rate-limit/transient-error windows are typically
+                    // measured in hundreds of milliseconds to a few seconds, and a short base delay keeps
+                    // total request latency reasonable while a real Retry-After header (see below) or
+                    // exponential growth on subsequent attempts still provides real backpressure.
+                    Delay = TimeSpan.FromMilliseconds(250),
+                    // ShouldRetryAfterHeader defaults to true, so the built-in DelayGenerator already
+                    // honors a Retry-After header when present and falls back to the exponential+jitter
+                    // backoff above otherwise — no custom DelayGenerator needed.
+                    ShouldHandle = args => WhatsAppRetryPredicate.ShouldRetryAsync(args.Outcome.Result, args.Outcome.Exception, args.Context.CancellationToken),
+                });
+            }
 
             // Added after (inside) the retry strategy, so the timeout applies to each attempt and a
             // timed-out attempt surfaces as TimeoutRejectedException, which the retry predicate
