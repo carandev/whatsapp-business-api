@@ -28,6 +28,7 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(ImageHeaderComponent))]
 [JsonSerializable(typeof(VideoHeaderComponent))]
 [JsonSerializable(typeof(DocumentHeaderComponent))]
+[JsonSerializable(typeof(UnknownHeaderComponent))]
 [JsonSerializable(typeof(BodyComponent))]
 [JsonSerializable(typeof(FooterComponent))]
 [JsonSerializable(typeof(ButtonsComponent))]

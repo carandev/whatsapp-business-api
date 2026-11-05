@@ -71,6 +71,16 @@ var next = page.Value?.Paging?.Cursors?.After;
 
 Pass `After` (or `Before`) in a new `TemplatesListOptions` to fetch the next page.
 
+Returned headers read as the matching type by their `format`, with their examples: `TextHeaderComponent` (`Examples` or `NamedExamples`), or `ImageHeaderComponent`, `VideoHeaderComponent`, and `DocumentHeaderComponent` (`ExampleHandle`). A header the SDK does not model, such as a `LOCATION` header, reads as `UnknownHeaderComponent` with its `Format`, so one unusual template never fails the whole page:
+
+```csharp
+var header = template.Components?.OfType<HeaderComponent>().FirstOrDefault();
+if (header is UnknownHeaderComponent unknown)
+{
+    Console.WriteLine($"Unsupported header format: {unknown.Format}");
+}
+```
+
 ## Get, update, delete
 
 ```csharp
