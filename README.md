@@ -176,6 +176,8 @@ sealed class MyWebhookHandlers : WhatsAppWebhookHandlers
 
 Each handler receives a `WebhookContext` with the WABA id (`WabaId`), the business number the event belongs to (`Metadata`, as Meta sends it), and, for inbound messages, the sender's profile (`Contact`). The handlers without the `context` parameter from 0.1.0 still work: the context overloads call them by default. Override one overload per event kind; if you override both, only the context overload runs unless it calls `base`.
 
+To handle a whole delivery at once, for example to persist every message in one transaction, override `OnMessagesBatchAsync`/`OnStatusesBatchAsync` instead. They receive each change's full list with a `WebhookBatchContext`; the defaults call the per-item handlers. See [Per-item vs batch handlers](https://carandev.github.io/whatsapp-business-api/guides/webhooks/#per-item-vs-batch-handlers).
+
 `ProcessAsync` returns a `WebhookProcessingResult`:
 
 | Result | Meaning | Suggested response |
