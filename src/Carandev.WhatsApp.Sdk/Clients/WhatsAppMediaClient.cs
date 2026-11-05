@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using Microsoft.Extensions.Options;
 using Carandev.WhatsApp.Sdk.Models.Media;
 using Carandev.WhatsApp.Sdk.Serialization;
 
@@ -12,16 +14,36 @@ public sealed class WhatsAppMediaClient : IWhatsAppMediaClient
     private const string MediaPathTemplate = "{phone_number_id}/media";
     private const int BufferChunkSize = 81920;
 
+    private const string OAuthScheme = "OAuth";
+
     private readonly IWhatsAppClient _client;
+    private readonly IOptions<WhatsAppOptions>? _options;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="WhatsAppMediaClient"/> class.
+    /// Initializes a new instance of the <see cref="WhatsAppMediaClient"/> class. Without
+    /// <see cref="WhatsAppOptions"/>, <see cref="UploadTemplateMediaAsync"/> requires a per-call
+    /// <c>appIdOverride</c>.
     /// </summary>
     /// <param name="client">The low-level HTTP client used to build and send requests.</param>
     public WhatsAppMediaClient(IWhatsAppClient client)
     {
         ArgumentNullException.ThrowIfNull(client);
         _client = client;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WhatsAppMediaClient"/> class.
+    /// </summary>
+    /// <param name="client">The low-level HTTP client used to build and send requests.</param>
+    /// <param name="options">
+    /// The configured <see cref="WhatsAppOptions"/>, used to resolve the default App ID when a
+    /// per-call override is not supplied for <see cref="UploadTemplateMediaAsync"/>.
+    /// </param>
+    public WhatsAppMediaClient(IWhatsAppClient client, IOptions<WhatsAppOptions> options)
+        : this(client)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        _options = options;
     }
 
     /// <inheritdoc />
@@ -119,6 +141,117 @@ public sealed class WhatsAppMediaClient : IWhatsAppMediaClient
         var bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
         return Result<byte[]>.Success(bytes);
     }
+
+    /// <inheritdoc />
+    public async Task<Result<string>> UploadTemplateMediaAsync(Stream content, string mimeType, string fileName, string? appIdOverride = null, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        ArgumentException.ThrowIfNullOrWhiteSpace(mimeType);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+
+        var appId = appIdOverride ?? _options?.Value.AppId;
+        if (string.IsNullOrWhiteSpace(appId))
+        {
+            return Result<string>.Failure(MissingAppIdError());
+        }
+
+        var validatedContent = await ValidateAndPrepareContentAsync(content, mimeType, ct).ConfigureAwait(false);
+        var contentStart = validatedContent.Position;
+        var fileLength = validatedContent.Length - contentStart;
+
+        var sessionPath =
+            $"{Uri.EscapeDataString(appId)}/uploads" +
+            $"?file_name={Uri.EscapeDataString(fileName)}" +
+            $"&file_length={fileLength.ToString(CultureInfo.InvariantCulture)}" +
+            $"&file_type={Uri.EscapeDataString(mimeType)}";
+        var sessionRequest = _client.CreateRequest(HttpMethod.Post, sessionPath);
+
+        var sessionResponse = await _client.SendAsync(sessionRequest, ct).ConfigureAwait(false);
+        var session = await ReadResultAsync(sessionResponse, WhatsAppJsonSerializerContext.Default.ResumableUploadSessionResponse, ct).ConfigureAwait(false);
+        if (!session.IsSuccess)
+        {
+            return Result<string>.Failure(session.Error!);
+        }
+
+        var sessionId = session.Value?.Id;
+        if (string.IsNullOrWhiteSpace(sessionId))
+        {
+            return Result<string>.Failure(new WhatsAppError { Message = "The upload session response did not contain an id." });
+        }
+
+        var upload = await UploadFromOffsetAsync(sessionId, validatedContent, contentStart, offset: 0, mimeType, ct).ConfigureAwait(false);
+        if (!upload.IsSuccess)
+        {
+            // Resume once: when Meta reports that part of the file arrived, send only the rest.
+            var offset = await GetUploadOffsetAsync(sessionId, ct).ConfigureAwait(false);
+            if (offset is not { } received || received <= 0 || received >= fileLength || !validatedContent.CanSeek)
+            {
+                return Result<string>.Failure(upload.Error!);
+            }
+
+            upload = await UploadFromOffsetAsync(sessionId, validatedContent, contentStart, received, mimeType, ct).ConfigureAwait(false);
+            if (!upload.IsSuccess)
+            {
+                return Result<string>.Failure(upload.Error!);
+            }
+        }
+
+        var handle = upload.Value?.Handle;
+        return string.IsNullOrWhiteSpace(handle)
+            ? Result<string>.Failure(new WhatsAppError { Message = "The upload response did not contain a file handle (h)." })
+            : Result<string>.Success(handle);
+    }
+
+    /// <summary>
+    /// Sends the bytes of <paramref name="content"/> from <paramref name="offset"/> (relative to
+    /// <paramref name="contentStart"/>) to the upload session, with the matching
+    /// <c>file_offset</c> header and the <c>OAuth</c> authorization scheme Meta requires.
+    /// </summary>
+    private async Task<Result<ResumableUploadHandleResponse>> UploadFromOffsetAsync(string sessionId, Stream content, long contentStart, long offset, string mimeType, CancellationToken ct)
+    {
+        // The session id ("upload:<session>", possibly with a "?sig=" query) is used verbatim as
+        // the path. The "./" prefix keeps "upload:" from being parsed as an absolute URI scheme.
+        var uploadRequest = CreateSessionRequest(HttpMethod.Post, sessionId);
+        uploadRequest.Headers.TryAddWithoutValidation("file_offset", offset.ToString(CultureInfo.InvariantCulture));
+
+        if (content.CanSeek)
+        {
+            content.Position = contentStart + offset;
+        }
+
+        // Not disposed here: disposing StreamContent would dispose the stream, which a resume
+        // reads again. The caller keeps ownership of the stream it passed in.
+        var body = new StreamContent(content);
+        body.Headers.ContentType = new MediaTypeHeaderValue(mimeType);
+        uploadRequest.Content = body;
+
+        var uploadResponse = await _client.SendAsync(uploadRequest, ct).ConfigureAwait(false);
+        return await ReadResultAsync(uploadResponse, WhatsAppJsonSerializerContext.Default.ResumableUploadHandleResponse, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Asks Meta how many bytes of the session it has received (<c>GET /upload:&lt;session&gt;</c>);
+    /// <see langword="null"/> when that query fails.
+    /// </summary>
+    private async Task<long?> GetUploadOffsetAsync(string sessionId, CancellationToken ct)
+    {
+        var statusRequest = CreateSessionRequest(HttpMethod.Get, sessionId);
+        var statusResponse = await _client.SendAsync(statusRequest, ct).ConfigureAwait(false);
+        var status = await ReadResultAsync(statusResponse, WhatsAppJsonSerializerContext.Default.ResumableUploadSessionResponse, ct).ConfigureAwait(false);
+        return status.IsSuccess ? status.Value?.FileOffset : null;
+    }
+
+    private HttpRequestMessage CreateSessionRequest(HttpMethod method, string sessionId)
+    {
+        var request = _client.CreateRequest(method, "./" + sessionId);
+        request.Headers.Authorization = new AuthenticationHeaderValue(OAuthScheme, request.Headers.Authorization?.Parameter);
+        return request;
+    }
+
+    private static WhatsAppError MissingAppIdError() => new()
+    {
+        Message = "AppId is not configured; set WhatsAppOptions.AppId or pass appIdOverride.",
+    };
 
     /// <summary>
     /// Validates <paramref name="content"/> against the MIME-category size ceiling for

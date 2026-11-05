@@ -208,6 +208,36 @@ public class WhatsAppWebhookProcessorTests
         Assert.Single(handlers.Statuses);
     }
 
+    private sealed class RethrowingErrorHandlers : WhatsAppWebhookHandlers
+    {
+        public int ErrorCalls { get; private set; }
+
+        public Exception? Thrown { get; private set; }
+
+        public override Task OnMessageAsync(WebhookMessage message, CancellationToken cancellationToken) =>
+            message.Id == "wamid.AAA" ? throw new InvalidOperationException("handler failed") : Task.CompletedTask;
+
+        public override Task OnErrorAsync(Exception exception, CancellationToken cancellationToken)
+        {
+            ErrorCalls++;
+            Thrown = new ApplicationException("error handler failed", exception);
+            throw Thrown;
+        }
+    }
+
+    [Fact]
+    public async Task ProcessAsync_PropagatesOnErrorException_WithoutRoutingItBackToOnError()
+    {
+        var processor = CreateProcessor();
+        var handlers = new RethrowingErrorHandlers();
+
+        var escaped = await Assert.ThrowsAsync<ApplicationException>(() =>
+            processor.ProcessAsync(BatchedPayloadJson, Sign(AppSecret, BatchedPayloadJson), handlers));
+
+        Assert.Same(handlers.Thrown, escaped);
+        Assert.Equal(1, handlers.ErrorCalls);
+    }
+
     [Fact]
     public void IsValidSignature_MatchesSignatureValidator()
     {

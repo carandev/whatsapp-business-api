@@ -32,6 +32,14 @@ public sealed class WhatsAppOptions
     public string? WabaId { get; set; }
 
     /// <summary>
+    /// The Meta App ID used by the Graph Resumable Upload API (<c>POST /{app-id}/uploads</c>), for
+    /// example by <c>IWhatsAppMediaClient.UploadTemplateMediaAsync</c> to obtain template media
+    /// header handles. Optional — only required when a consumer uploads template media without a
+    /// per-call override.
+    /// </summary>
+    public string? AppId { get; set; }
+
+    /// <summary>
     /// The Meta Graph API version segment, e.g. <c>v21.0</c>. Defaults to <c>v21.0</c>.
     /// </summary>
     public string ApiVersion { get; set; } = "v21.0";
@@ -50,7 +58,12 @@ public sealed class WhatsAppOptions
     public int MaxRetries { get; set; } = 3;
 
     /// <summary>
-    /// The HTTP request timeout. Not yet enforced by this scaffold; reserved for a future release.
+    /// The timeout for each HTTP attempt, enforced by the resilience pipeline that
+    /// <c>AddWhatsAppCloudApi</c> registers. A timed-out attempt is retried like any other
+    /// transient failure, up to <see cref="MaxRetries"/>; when every attempt times out, a
+    /// transient <see cref="Exceptions.WhatsAppException"/> with code 504 is thrown. The total
+    /// duration of a call can therefore reach about <c>Timeout × (MaxRetries + 1)</c> plus backoff;
+    /// pass a <see cref="CancellationToken"/> to bound it.
     /// </summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
 

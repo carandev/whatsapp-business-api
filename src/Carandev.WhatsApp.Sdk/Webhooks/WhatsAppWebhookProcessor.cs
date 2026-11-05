@@ -68,7 +68,7 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
         }
         catch (JsonException ex)
         {
-            await handlers.OnErrorAsync(ex, cancellationToken).ConfigureAwait(false);
+            await handlers.OnErrorAsync(ex, null, cancellationToken).ConfigureAwait(false);
             return WebhookProcessingResult.InvalidPayload;
         }
 
@@ -83,7 +83,7 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
 
                 foreach (var change in entry.Changes)
                 {
-                    await DispatchChangeAsync(change, handlers, cancellationToken).ConfigureAwait(false);
+                    await DispatchChangeAsync(entry.Id, change, handlers, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -91,7 +91,7 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
         return WebhookProcessingResult.Processed;
     }
 
-    private static async Task DispatchChangeAsync(WebhookChange change, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
+    private static async Task DispatchChangeAsync(string? wabaId, WebhookChange change, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
     {
         if (change.Value.ValueKind != JsonValueKind.Object)
         {
@@ -100,16 +100,16 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
 
         if (change.Value.TryGetProperty("messages", out _))
         {
-            await DispatchMessagesAsync(change.Value, handlers, cancellationToken).ConfigureAwait(false);
+            await DispatchMessagesAsync(wabaId, change.Value, handlers, cancellationToken).ConfigureAwait(false);
         }
 
         if (change.Value.TryGetProperty("statuses", out _))
         {
-            await DispatchStatusesAsync(change.Value, handlers, cancellationToken).ConfigureAwait(false);
+            await DispatchStatusesAsync(wabaId, change.Value, handlers, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private static async Task DispatchMessagesAsync(JsonElement value, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
+    private static async Task DispatchMessagesAsync(string? wabaId, JsonElement value, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
     {
         MessagesWebhookPayload? payload;
         try
@@ -118,22 +118,21 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
         }
         catch (JsonException ex)
         {
-            await handlers.OnErrorAsync(ex, cancellationToken).ConfigureAwait(false);
+            await handlers.OnErrorAsync(ex, new WebhookContext { WabaId = wabaId }, cancellationToken).ConfigureAwait(false);
             return;
         }
 
-        if (payload?.Messages is null)
+        if (payload?.Messages is not { Count: > 0 } messages)
         {
             return;
         }
 
-        foreach (var message in payload.Messages)
-        {
-            await InvokeHandlerSafelyAsync(() => handlers.OnMessageAsync(message, cancellationToken), handlers, cancellationToken).ConfigureAwait(false);
-        }
+        var batchContext = new WebhookBatchContext { WabaId = wabaId, Metadata = payload.Metadata, Contacts = payload.Contacts ?? [] };
+        var changeContext = new WebhookContext { WabaId = wabaId, Metadata = payload.Metadata };
+        await WebhookDispatch.InvokeBatchSafelyAsync(() => handlers.OnMessagesBatchAsync(messages, batchContext, cancellationToken), changeContext, handlers, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task DispatchStatusesAsync(JsonElement value, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
+    private static async Task DispatchStatusesAsync(string? wabaId, JsonElement value, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
     {
         StatusesWebhookPayload? payload;
         try
@@ -142,30 +141,17 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
         }
         catch (JsonException ex)
         {
-            await handlers.OnErrorAsync(ex, cancellationToken).ConfigureAwait(false);
+            await handlers.OnErrorAsync(ex, new WebhookContext { WabaId = wabaId }, cancellationToken).ConfigureAwait(false);
             return;
         }
 
-        if (payload?.Statuses is null)
+        if (payload?.Statuses is not { Count: > 0 } statuses)
         {
             return;
         }
 
-        foreach (var status in payload.Statuses)
-        {
-            await InvokeHandlerSafelyAsync(() => handlers.OnStatusAsync(status, cancellationToken), handlers, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    private static async Task InvokeHandlerSafelyAsync(Func<Task> handlerCall, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await handlerCall().ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            await handlers.OnErrorAsync(ex, cancellationToken).ConfigureAwait(false);
-        }
+        var batchContext = new WebhookBatchContext { WabaId = wabaId, Metadata = payload.Metadata };
+        var changeContext = new WebhookContext { WabaId = wabaId, Metadata = payload.Metadata };
+        await WebhookDispatch.InvokeBatchSafelyAsync(() => handlers.OnStatusesBatchAsync(statuses, batchContext, cancellationToken), changeContext, handlers, cancellationToken).ConfigureAwait(false);
     }
 }

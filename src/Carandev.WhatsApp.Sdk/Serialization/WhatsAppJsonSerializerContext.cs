@@ -84,6 +84,9 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(MediaUploadResponse))]
 // Media — get URL and download (PR2 of issue #6)
 [JsonSerializable(typeof(MediaUrlResponse))]
+// Media — Resumable Upload API for template media header handles (issue #52)
+[JsonSerializable(typeof(ResumableUploadSessionResponse))]
+[JsonSerializable(typeof(ResumableUploadHandleResponse))]
 // Phone numbers — DTOs and serializer registration (PR1 of issue #5)
 [JsonSerializable(typeof(PhoneNumber))]
 [JsonSerializable(typeof(TemplatesPage<PhoneNumber>))]

@@ -3,21 +3,43 @@ using System.Text.Json.Serialization;
 namespace Carandev.WhatsApp.Sdk.Models.Templates;
 
 /// <summary>
-/// Base type for a template's <c>HEADER</c> component. Discriminated on the wire by Meta's
-/// <c>format</c> property into one of <see cref="TextHeaderComponent"/>,
+/// Base type for a template's <c>HEADER</c> component: one of <see cref="TextHeaderComponent"/>,
 /// <see cref="ImageHeaderComponent"/>, <see cref="VideoHeaderComponent"/>, or
-/// <see cref="DocumentHeaderComponent"/>.
+/// <see cref="DocumentHeaderComponent"/>, told apart on the wire by Meta's <c>format</c> property.
 /// </summary>
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "format")]
-[JsonDerivedType(typeof(TextHeaderComponent), "TEXT")]
-[JsonDerivedType(typeof(ImageHeaderComponent), "IMAGE")]
-[JsonDerivedType(typeof(VideoHeaderComponent), "VIDEO")]
-[JsonDerivedType(typeof(DocumentHeaderComponent), "DOCUMENT")]
+/// <remarks>
+/// <see cref="TemplateComponent"/> already discriminates on <c>type</c>, and System.Text.Json does
+/// not apply a nested discriminator, so every header serializes through this base contract:
+/// <c>format</c>, <c>text</c>, and <c>example</c> are written from the concrete header.
+/// </remarks>
 public abstract record HeaderComponent : TemplateComponent
 {
     private protected HeaderComponent()
     {
     }
+
+    /// <summary>
+    /// Meta's <c>format</c> value: <c>TEXT</c>, <c>IMAGE</c>, <c>VIDEO</c>, or <c>DOCUMENT</c>.
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("format")]
+    internal abstract string Format { get; }
+
+    /// <summary>
+    /// The header text, written only for text headers.
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("text")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    internal virtual string? WireText => null;
+
+    /// <summary>
+    /// The header example in Meta's wire shape, omitted when absent.
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("example")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    internal abstract HeaderExample? WireExample { get; }
 }
 
 /// <summary>
@@ -25,6 +47,9 @@ public abstract record HeaderComponent : TemplateComponent
 /// </summary>
 public sealed record TextHeaderComponent : HeaderComponent
 {
+    private readonly IReadOnlyList<string>? _examples;
+    private readonly IReadOnlyList<NamedParameterExample>? _namedExamples;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TextHeaderComponent"/> class.
     /// </summary>
@@ -38,8 +63,55 @@ public sealed record TextHeaderComponent : HeaderComponent
     /// <summary>
     /// The header text.
     /// </summary>
-    [JsonPropertyName("text")]
+    [JsonIgnore]
     public string Text { get; }
+
+    /// <summary>
+    /// Optional example values for the positional placeholders, in order. Serialized as
+    /// <c>"example": { "header_text": [...] }</c>; omitted when null or empty.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the text uses named placeholders, when the count differs from the number of
+    /// distinct positional placeholders, or when a value is null, empty, or whitespace.
+    /// </exception>
+    [JsonIgnore]
+    public IReadOnlyList<string>? Examples
+    {
+        get => _examples;
+        init
+        {
+            TemplatePlaceholders.ValidatePositionalExamples(Text, value, "Header text", nameof(Examples));
+            _examples = value;
+        }
+    }
+
+    /// <summary>
+    /// Optional example values for the named placeholders. Serialized as
+    /// <c>"example": { "header_text_named_params": [...] }</c>; omitted when null or empty.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the text uses positional placeholders, when a name is repeated, or when the
+    /// names differ from the text's named placeholders.
+    /// </exception>
+    [JsonIgnore]
+    public IReadOnlyList<NamedParameterExample>? NamedExamples
+    {
+        get => _namedExamples;
+        init
+        {
+            TemplatePlaceholders.ValidateNamedExamples(Text, value, "Header text", nameof(NamedExamples));
+            _namedExamples = value;
+        }
+    }
+
+    /// <inheritdoc />
+    internal override string Format => "TEXT";
+
+    /// <inheritdoc />
+    internal override string? WireText => Text;
+
+    /// <inheritdoc />
+    internal override HeaderExample? WireExample => HeaderExample.ForText(_examples, _namedExamples);
 }
 
 /// <summary>
@@ -61,10 +133,17 @@ public sealed record ImageHeaderComponent : HeaderComponent
     }
 
     /// <summary>
-    /// The uploaded media handle used as the header's example image.
+    /// The uploaded media handle used as the header's example image. Serialized as
+    /// <c>"example": { "header_handle": [handle] }</c>.
     /// </summary>
-    [JsonPropertyName("example")]
+    [JsonIgnore]
     public string ExampleHandle { get; }
+
+    /// <inheritdoc />
+    internal override string Format => "IMAGE";
+
+    /// <inheritdoc />
+    internal override HeaderExample? WireExample => HeaderExample.ForHandle(ExampleHandle);
 }
 
 /// <summary>
@@ -86,10 +165,17 @@ public sealed record VideoHeaderComponent : HeaderComponent
     }
 
     /// <summary>
-    /// The uploaded media handle used as the header's example video.
+    /// The uploaded media handle used as the header's example video. Serialized as
+    /// <c>"example": { "header_handle": [handle] }</c>.
     /// </summary>
-    [JsonPropertyName("example")]
+    [JsonIgnore]
     public string ExampleHandle { get; }
+
+    /// <inheritdoc />
+    internal override string Format => "VIDEO";
+
+    /// <inheritdoc />
+    internal override HeaderExample? WireExample => HeaderExample.ForHandle(ExampleHandle);
 }
 
 /// <summary>
@@ -111,8 +197,70 @@ public sealed record DocumentHeaderComponent : HeaderComponent
     }
 
     /// <summary>
-    /// The uploaded media handle used as the header's example document.
+    /// The uploaded media handle used as the header's example document. Serialized as
+    /// <c>"example": { "header_handle": [handle] }</c>.
     /// </summary>
-    [JsonPropertyName("example")]
+    [JsonIgnore]
     public string ExampleHandle { get; }
+
+    /// <inheritdoc />
+    internal override string Format => "DOCUMENT";
+
+    /// <inheritdoc />
+    internal override HeaderExample? WireExample => HeaderExample.ForHandle(ExampleHandle);
+}
+
+/// <summary>
+/// Wire shape of a header's <c>example</c> object. Built by the SDK from the header's own
+/// properties; callers set examples on the header types instead.
+/// </summary>
+public sealed record HeaderExample
+{
+    [JsonConstructor]
+    internal HeaderExample()
+    {
+    }
+
+    /// <summary>
+    /// Uploaded media handles for a media header (<c>header_handle</c>).
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("header_handle")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? HeaderHandle { get; internal set; }
+
+    /// <summary>
+    /// Positional examples for a text header (<c>header_text</c>).
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("header_text")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? HeaderText { get; internal set; }
+
+    /// <summary>
+    /// Named examples for a text header (<c>header_text_named_params</c>).
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("header_text_named_params")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<NamedParameterExample>? HeaderTextNamedParams { get; internal set; }
+
+    internal static HeaderExample ForHandle(string handle) => new() { HeaderHandle = [handle] };
+
+    internal static HeaderExample? ForText(
+        IReadOnlyList<string>? examples,
+        IReadOnlyList<NamedParameterExample>? namedExamples)
+    {
+        if (examples is { Count: > 0 })
+        {
+            return new HeaderExample { HeaderText = examples };
+        }
+
+        if (namedExamples is { Count: > 0 })
+        {
+            return new HeaderExample { HeaderTextNamedParams = namedExamples };
+        }
+
+        return null;
+    }
 }

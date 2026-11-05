@@ -147,31 +147,36 @@ app.Run();
 
 sealed class MyWebhookHandlers : WhatsAppWebhookHandlers
 {
-    public override Task OnMessageAsync(WebhookMessage message, CancellationToken cancellationToken)
+    public override Task OnMessageAsync(WebhookMessage message, WebhookContext context, CancellationToken cancellationToken)
     {
         if (message is TextWebhookMessage text)
         {
-            Console.WriteLine($"From {text.From}: {text.Text.Body}");
+            var sender = context.Contact?.Profile?.Name ?? text.From;
+            Console.WriteLine($"{sender} -> {context.Metadata?.DisplayPhoneNumber}: {text.Text.Body}");
         }
 
         return Task.CompletedTask;
     }
 
-    public override Task OnStatusAsync(WebhookStatus status, CancellationToken cancellationToken)
+    public override Task OnStatusAsync(WebhookStatus status, WebhookContext context, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"Message {status.Id} is now {status.Status}");
+        Console.WriteLine($"Message {status.Id} sent from {context.Metadata?.PhoneNumberId} is now {status.Status}");
         return Task.CompletedTask;
     }
 
-    public override Task OnErrorAsync(Exception exception, CancellationToken cancellationToken)
+    public override Task OnErrorAsync(Exception exception, WebhookContext? context, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"Webhook error: {exception.Message}");
+        Console.WriteLine($"Webhook error on {context?.Metadata?.PhoneNumberId ?? "unknown number"}: {exception.Message}");
         return Task.CompletedTask;
     }
 }
 ```
 
 `WhatsAppWebhookHandlers` methods are all `virtual` with no-op defaults, so override only what you need. A per-item exception from `OnMessageAsync`/`OnStatusAsync` is routed to `OnErrorAsync` instead of aborting the rest of the batch.
+
+Each handler receives a `WebhookContext` with the WABA id (`WabaId`), the business number the event belongs to (`Metadata`, as Meta sends it), and, for inbound messages, the sender's profile (`Contact`). The handlers without the `context` parameter from 0.1.0 still work: the context overloads call them by default. Override one overload per event kind; if you override both, only the context overload runs unless it calls `base`.
+
+To handle a whole delivery at once, for example to persist every message in one transaction, override `OnMessagesBatchAsync`/`OnStatusesBatchAsync` instead. They receive each change's full list with a `WebhookBatchContext`; the defaults call the per-item handlers. See [Per-item vs batch handlers](https://carandev.github.io/whatsapp-business-api/guides/webhooks/#per-item-vs-batch-handlers).
 
 `ProcessAsync` returns a `WebhookProcessingResult`:
 

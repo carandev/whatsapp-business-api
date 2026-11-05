@@ -1,3 +1,5 @@
+using Carandev.WhatsApp.Sdk.Models.Templates;
+using Carandev.WhatsApp.Sdk.Models.PhoneNumbers;
 using System.Reflection;
 using Carandev.WhatsApp.Sdk.Clients;
 
@@ -83,8 +85,76 @@ public class ClientInterfacesTests
                 nameof(IWhatsAppMediaClient.UploadAsync),
                 nameof(IWhatsAppMediaClient.UploadAsync),
                 nameof(IWhatsAppMediaClient.UploadAsync),
+                nameof(IWhatsAppMediaClient.UploadTemplateMediaAsync),
             },
             methodNames);
+    }
+
+    [Fact]
+    public async Task IWhatsAppMediaClient_UploadTemplateMediaAsync_DefaultImplementation_ThrowsNotSupported()
+    {
+        IWhatsAppMediaClient client = new ThirdPartyMediaClient();
+
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() =>
+            client.UploadTemplateMediaAsync(new MemoryStream([1]), "image/jpeg", "a.jpg"));
+
+        Assert.Contains(nameof(IWhatsAppMediaClient.UploadTemplateMediaAsync), exception.Message);
+        Assert.Contains(nameof(ThirdPartyMediaClient), exception.Message);
+    }
+
+    /// <summary>
+    /// A minimal third-party implementation written against the interface before
+    /// <c>UploadTemplateMediaAsync</c> existed: it implements only the original members.
+    /// </summary>
+    [Fact]
+    public async Task IWhatsAppPhoneNumbersClient_ListWithOptions_DefaultImplementation_ThrowsNotSupported()
+    {
+        IWhatsAppPhoneNumbersClient client = new ThirdPartyPhoneNumbersClient();
+
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() =>
+            client.ListPhoneNumbersAsync(new PhoneNumbersListOptions { Limit = 1 }));
+
+        Assert.Contains(nameof(ThirdPartyPhoneNumbersClient), exception.Message);
+    }
+
+    /// <summary>
+    /// A third-party implementation written against 0.1.0: it does not implement the options
+    /// overload and must still compile.
+    /// </summary>
+    private sealed class ThirdPartyPhoneNumbersClient : IWhatsAppPhoneNumbersClient
+    {
+        public Task<Result<TemplatesPage<PhoneNumber>>> ListPhoneNumbersAsync(string? wabaIdOverride = null, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<PhoneNumber>> GetPhoneNumberAsync(string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result> RequestVerificationCodeAsync(VerificationCodeMethod method, string languageCode, string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result> VerifyCodeAsync(string code, string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+    }
+
+    private sealed class ThirdPartyMediaClient : IWhatsAppMediaClient
+    {
+        public Task<Result<Sdk.Models.Media.MediaUploadResponse>> UploadAsync(Stream content, string mimeType, string filename, string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<Sdk.Models.Media.MediaUploadResponse>> UploadAsync(byte[] content, string mimeType, string filename, string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<Sdk.Models.Media.MediaUploadResponse>> UploadAsync(string filePath, string mimeType, string? filename = null, string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<Sdk.Models.Media.MediaUrlResponse>> GetMediaUrlAsync(string mediaId, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<Stream>> DownloadAsync(string url, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<byte[]>> DownloadBytesAsync(string url, CancellationToken ct = default) =>
+            throw new NotImplementedException();
     }
 
     [Fact]
@@ -149,6 +219,7 @@ public class ClientInterfacesTests
             new[]
             {
                 nameof(IWhatsAppPhoneNumbersClient.GetPhoneNumberAsync),
+                nameof(IWhatsAppPhoneNumbersClient.ListPhoneNumbersAsync),
                 nameof(IWhatsAppPhoneNumbersClient.ListPhoneNumbersAsync),
                 nameof(IWhatsAppPhoneNumbersClient.RequestVerificationCodeAsync),
                 nameof(IWhatsAppPhoneNumbersClient.VerifyCodeAsync),

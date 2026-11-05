@@ -43,17 +43,23 @@ public class ServiceCollectionExtensionsTests
     /// <c>DelegatingHandler</c>s registered via <c>AddResilienceHandler</c> sit OUTSIDE the primary
     /// handler, so they still run against <paramref name="handler"/>'s canned responses.
     /// </summary>
-    private static ServiceProvider BuildProviderWithRecordingHandler(RecordingHandler handler, int maxRetries)
+    private static ServiceProvider BuildProviderWithRecordingHandler(HttpMessageHandler handler, int maxRetries, TimeSpan? timeout = null)
     {
+        var settings = new Dictionary<string, string?>
+        {
+            ["WhatsApp:AccessToken"] = "test-access-token",
+            ["WhatsApp:PhoneNumberId"] = "123456789",
+            ["WhatsApp:ApiVersion"] = "v21.0",
+            ["WhatsApp:BaseUrl"] = "https://graph.facebook.com/{0}/",
+            ["WhatsApp:MaxRetries"] = maxRetries.ToString(CultureInfo.InvariantCulture),
+        };
+        if (timeout is { } value)
+        {
+            settings["WhatsApp:Timeout"] = value.ToString("c", CultureInfo.InvariantCulture);
+        }
+
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["WhatsApp:AccessToken"] = "test-access-token",
-                ["WhatsApp:PhoneNumberId"] = "123456789",
-                ["WhatsApp:ApiVersion"] = "v21.0",
-                ["WhatsApp:BaseUrl"] = "https://graph.facebook.com/{0}/",
-                ["WhatsApp:MaxRetries"] = maxRetries.ToString(CultureInfo.InvariantCulture),
-            })
+            .AddInMemoryCollection(settings)
             .Build();
 
         var services = new ServiceCollection();
@@ -109,6 +115,77 @@ public class ServiceCollectionExtensionsTests
         var httpClient = factory.CreateClient(nameof(IWhatsAppClient));
 
         Assert.Equal(new Uri("https://graph.facebook.com/v21.0/"), httpClient.BaseAddress);
+    }
+
+    /// <summary>
+    /// Answers each request after the delay its attempt number maps to, honoring cancellation so
+    /// a per-attempt timeout actually aborts the attempt.
+    /// </summary>
+    private sealed class DelayingHandler(Func<int, TimeSpan> delayForAttempt) : HttpMessageHandler
+    {
+        private int _requestCount;
+
+        public int RequestCount => _requestCount;
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var attempt = Interlocked.Increment(ref _requestCount);
+            await Task.Delay(delayForAttempt(attempt), cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }
+    }
+
+    [Fact]
+    public void TypedClient_HttpClientTimeout_IsInfinite_SoItNeverCutsRetries()
+    {
+        using var provider = BuildProvider(out _);
+
+        var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(IWhatsAppClient));
+
+        Assert.Equal(Timeout.InfiniteTimeSpan, httpClient.Timeout);
+    }
+
+    [Fact]
+    public async Task RetryPipeline_AttemptExceedingTimeout_IsRetried_AndNextAttemptSucceeds()
+    {
+        var handler = new DelayingHandler(attempt => attempt == 1 ? TimeSpan.FromSeconds(30) : TimeSpan.Zero);
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 1, timeout: TimeSpan.FromMilliseconds(200));
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+        var stopwatch = Stopwatch.StartNew();
+
+        var response = await client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, handler.RequestCount);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"The slow first attempt was not cut by the 200ms timeout ({stopwatch.Elapsed}).");
+    }
+
+    [Fact]
+    public async Task RetryPipeline_TimeoutOnEveryAttempt_ThrowsTransientWhatsAppException_AfterMaxRetries()
+    {
+        var handler = new DelayingHandler(_ => TimeSpan.FromSeconds(30));
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 1, timeout: TimeSpan.FromMilliseconds(100));
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+
+        var exception = await Assert.ThrowsAsync<WhatsAppException>(() =>
+            client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics")));
+
+        Assert.Equal(2, handler.RequestCount);
+        Assert.True(exception.IsTransient);
+        Assert.Equal((int)HttpStatusCode.GatewayTimeout, exception.Code);
+        Assert.IsType<Polly.Timeout.TimeoutRejectedException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task RetryPipeline_CallerCancellation_IsNotConvertedIntoTimeoutException()
+    {
+        var handler = new DelayingHandler(_ => TimeSpan.FromSeconds(30));
+        using var provider = BuildProviderWithRecordingHandler(handler, maxRetries: 1, timeout: TimeSpan.FromSeconds(20));
+        var client = provider.GetRequiredService<IWhatsAppClient>();
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.SendAsync(client.CreateRequest(HttpMethod.Get, "diagnostics"), cts.Token));
     }
 
     [Fact]

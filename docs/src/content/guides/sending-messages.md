@@ -104,6 +104,7 @@ await messages.SendListMessageAsync(to,
         [
             new ListRow("slot-am", "Morning", "08:00 to 12:00"),
             new ListRow("slot-pm", "Afternoon", "14:00 to 18:00"),
+            new ListRow("slot-any", "Any time"), // the description is optional
         ]),
     ],
     headerText: "Delivery");

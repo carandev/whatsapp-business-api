@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -20,7 +21,7 @@ public sealed class WhatsAppPhoneNumbersClient : IWhatsAppPhoneNumbersClient
     /// <param name="client">The low-level HTTP client used to build and send requests.</param>
     /// <param name="options">
     /// The configured <see cref="WhatsAppOptions"/>, used to resolve the default WABA id when a
-    /// per-call override is not supplied for <see cref="ListPhoneNumbersAsync"/>.
+    /// per-call override is not supplied for <c>ListPhoneNumbersAsync</c>.
     /// </param>
     public WhatsAppPhoneNumbersClient(IWhatsAppClient client, IOptions<WhatsAppOptions> options)
     {
@@ -32,7 +33,17 @@ public sealed class WhatsAppPhoneNumbersClient : IWhatsAppPhoneNumbersClient
     }
 
     /// <inheritdoc />
-    public async Task<Result<TemplatesPage<PhoneNumber>>> ListPhoneNumbersAsync(string? wabaIdOverride = null, CancellationToken ct = default)
+    public Task<Result<TemplatesPage<PhoneNumber>>> ListPhoneNumbersAsync(string? wabaIdOverride = null, CancellationToken ct = default) =>
+        ListPhoneNumbersCoreAsync(options: null, wabaIdOverride, ct);
+
+    /// <inheritdoc />
+    public Task<Result<TemplatesPage<PhoneNumber>>> ListPhoneNumbersAsync(PhoneNumbersListOptions options, string? wabaIdOverride = null, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return ListPhoneNumbersCoreAsync(options, wabaIdOverride, ct);
+    }
+
+    private async Task<Result<TemplatesPage<PhoneNumber>>> ListPhoneNumbersCoreAsync(PhoneNumbersListOptions? options, string? wabaIdOverride, CancellationToken ct)
     {
         var wabaId = wabaIdOverride ?? _options.Value.WabaId;
         if (wabaId is null)
@@ -40,7 +51,14 @@ public sealed class WhatsAppPhoneNumbersClient : IWhatsAppPhoneNumbersClient
             return Result<TemplatesPage<PhoneNumber>>.Failure(MissingWabaIdError());
         }
 
-        var httpRequest = _client.CreateWabaRequest(HttpMethod.Get, "{waba_id}/phone_numbers", wabaId);
+        var query = GraphQueryString.Build(
+        [
+            ("limit", options?.Limit?.ToString(CultureInfo.InvariantCulture)),
+            ("after", options?.After),
+            ("before", options?.Before),
+        ]);
+
+        var httpRequest = _client.CreateWabaRequest(HttpMethod.Get, "{waba_id}/phone_numbers" + query, wabaId);
 
         var response = await _client.SendAsync(httpRequest, ct).ConfigureAwait(false);
         return await ReadResultAsync(response, WhatsAppJsonSerializerContext.Default.TemplatesPagePhoneNumber, ct).ConfigureAwait(false);

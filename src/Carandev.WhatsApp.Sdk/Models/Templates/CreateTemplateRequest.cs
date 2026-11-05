@@ -64,4 +64,42 @@ public sealed record CreateTemplateRequest
     /// </summary>
     [JsonPropertyName("components")]
     public IReadOnlyList<TemplateComponent> Components { get; }
+
+    /// <summary>
+    /// The template's placeholder format, sent as <c>parameter_format</c>. When null, the request
+    /// sends <c>named</c> if the body or a text header uses named placeholders, and omits the field
+    /// otherwise (Meta's default is positional).
+    /// </summary>
+    [JsonIgnore]
+    public TemplateParameterFormat? ParameterFormat { get; init; }
+
+    /// <summary>
+    /// The <c>parameter_format</c> value actually sent: <see cref="ParameterFormat"/>, or the
+    /// format inferred from the components.
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("parameter_format")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    internal TemplateParameterFormat? WireParameterFormat =>
+        ParameterFormat ?? (UsesNamedPlaceholders(Components) ? TemplateParameterFormat.Named : null);
+
+    private static bool UsesNamedPlaceholders(IReadOnlyList<TemplateComponent> components)
+    {
+        foreach (var component in components)
+        {
+            var text = component switch
+            {
+                BodyComponent body => body.Text,
+                TextHeaderComponent header => header.Text,
+                _ => null,
+            };
+
+            if (text is not null && TemplatePlaceholders.HasNamedPlaceholders(text))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

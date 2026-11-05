@@ -26,6 +26,8 @@ public abstract record TemplateButton
 /// </summary>
 public sealed record UrlButton : TemplateButton
 {
+    private readonly IReadOnlyList<string>? _examples;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="UrlButton"/> class.
     /// </summary>
@@ -50,6 +52,40 @@ public sealed record UrlButton : TemplateButton
     /// </summary>
     [JsonPropertyName("url")]
     public string Url { get; }
+
+    /// <summary>
+    /// Optional example values for the URL's positional placeholders, in order. Serialized as
+    /// <c>"example": [...]</c>; omitted when null or empty. Meta requires one when the URL contains
+    /// a variable.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the count differs from the number of distinct positional placeholders in the
+    /// URL, or when a value is null, empty, or whitespace.
+    /// </exception>
+    [JsonIgnore]
+    public IReadOnlyList<string>? Examples
+    {
+        get => _examples;
+        init
+        {
+            TemplatePlaceholders.ValidatePositionalExamples(Url, value, "Button URL", nameof(Examples));
+            _examples = value;
+        }
+    }
+
+    /// <summary>
+    /// The URL example in Meta's wire shape, omitted when no examples were provided.
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("example")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    internal IReadOnlyList<string>? WireExample
+    {
+        get => _examples is { Count: > 0 } ? _examples : null;
+
+        // Read path for templates returned by Meta; Meta already validated these examples.
+        init => _examples = value;
+    }
 }
 
 /// <summary>

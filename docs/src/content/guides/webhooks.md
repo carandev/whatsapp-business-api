@@ -49,31 +49,34 @@ app.Run();
 
 sealed class MyWebhookHandlers : WhatsAppWebhookHandlers
 {
-    public override Task OnMessageAsync(WebhookMessage message, CancellationToken cancellationToken)
+    public override Task OnMessageAsync(WebhookMessage message, WebhookContext context, CancellationToken cancellationToken)
     {
         if (message is TextWebhookMessage text)
         {
-            Console.WriteLine($"From {text.From}: {text.Text.Body}");
+            var sender = context.Contact?.Profile?.Name ?? text.From;
+            Console.WriteLine($"{sender} -> {context.Metadata?.DisplayPhoneNumber}: {text.Text.Body}");
         }
 
         return Task.CompletedTask;
     }
 
-    public override Task OnStatusAsync(WebhookStatus status, CancellationToken cancellationToken)
+    public override Task OnStatusAsync(WebhookStatus status, WebhookContext context, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"Message {status.Id} is now {status.Status}");
+        Console.WriteLine($"Message {status.Id} sent from {context.Metadata?.PhoneNumberId} is now {status.Status}");
         return Task.CompletedTask;
     }
 
-    public override Task OnErrorAsync(Exception exception, CancellationToken cancellationToken)
+    public override Task OnErrorAsync(Exception exception, WebhookContext? context, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"Webhook error: {exception.Message}");
+        Console.WriteLine($"Webhook error on {context?.Metadata?.PhoneNumberId ?? "unknown number"}: {exception.Message}");
         return Task.CompletedTask;
     }
 }
 ```
 
 `WhatsAppWebhookHandlers` methods are all `virtual` with no-op defaults, so override only what you need. A per-item exception from `OnMessageAsync`/`OnStatusAsync` is routed to `OnErrorAsync` instead of aborting the rest of the batch.
+
+Each handler receives a `WebhookContext` with the WABA id (`WabaId`), the business number the event belongs to (`Metadata`, as Meta sends it), and, for inbound messages, the sender's profile (`Contact`). The handlers without the `context` parameter from 0.1.0 still work: the context overloads call them by default. Override one overload per event kind; if you override both, only the context overload runs unless it calls `base`.
 
 `ProcessAsync` returns a `WebhookProcessingResult`:
 
@@ -82,6 +85,62 @@ sealed class MyWebhookHandlers : WhatsAppWebhookHandlers
 | `Processed` | Every message/status item was dispatched. | `200 OK` |
 | `InvalidSignature` | Missing or wrong `X-Hub-Signature-256`, or no `AppSecret` configured. No handler ran. | `401 Unauthorized` |
 | `InvalidPayload` | The body is not a webhook envelope; `OnErrorAsync` received the parsing exception. | `200 OK`, so Meta does not retry a payload that will never parse |
+
+## Multiple business numbers
+
+When one Meta app serves several business numbers, every event says which number it belongs to. Route on `context.Metadata?.PhoneNumberId`, not on `message.From` (that is the customer):
+
+```csharp
+sealed class InboxHandlers(IInboxRouter inboxes) : WhatsAppWebhookHandlers
+{
+    public override Task OnMessageAsync(WebhookMessage message, WebhookContext context, CancellationToken cancellationToken)
+    {
+        var inbox = inboxes.ForPhoneNumberId(context.Metadata?.PhoneNumberId);
+        var senderName = context.Contact?.Profile?.Name;
+        return inbox.ReceiveAsync(message, senderName, cancellationToken);
+    }
+
+    public override Task OnStatusAsync(WebhookStatus status, WebhookContext context, CancellationToken cancellationToken) =>
+        inboxes.ForPhoneNumberId(context.Metadata?.PhoneNumberId).UpdateStatusAsync(status, cancellationToken);
+}
+```
+
+| `WebhookContext` member | Source in the payload | Messages | Statuses |
+|---|---|---|---|
+| `WabaId` | `entry[].id` | ✓ | ✓ |
+| `Metadata.PhoneNumberId` / `Metadata.DisplayPhoneNumber` | `value.metadata` | ✓ | ✓ |
+| `Contact` (`WaId`, `Profile.Name`) | `value.contacts[]` | ✓ | always `null` |
+
+`Contact` is the contact whose `wa_id` equals the message's `from`. If none matches and the change carries exactly one contact, that contact is used; otherwise it is `null`.
+
+`OnErrorAsync` receives a `null` context when the whole body cannot be parsed, a context with only `WabaId` when one change cannot be parsed, the failing item's full context when a per-item handler throws, and the change's context (no `Contact`) when a batch handler throws.
+
+## Per-item vs batch handlers
+
+Meta groups items: one webhook change can carry several messages or statuses. Choose, per event kind, how you receive them:
+
+- **Per item** (default): override `OnMessageAsync` / `OnStatusAsync`. Each item arrives in its own call with its own `WebhookContext`, and an exception from one item goes to `OnErrorAsync` without stopping the others. Choose this for event-by-event logic such as replying or routing.
+- **Per batch**: override `OnMessagesBatchAsync` / `OnStatusesBatchAsync`. You get one call per change with the whole list and a `WebhookBatchContext` (`WabaId`, `Metadata`, and every `Contacts` entry of the change; `Contacts` is never `null` and always empty for statuses). Choose this to persist in bulk, for example one `INSERT` or one transaction per change.
+
+```csharp
+sealed class BulkInsertHandlers(IMessageStore store) : WhatsAppWebhookHandlers
+{
+    public override async Task OnMessagesBatchAsync(IReadOnlyList<WebhookMessage> messages, WebhookBatchContext context, CancellationToken cancellationToken)
+    {
+        var rows = messages.Select(message => new InboundMessageRow(
+            PhoneNumberId: context.Metadata?.PhoneNumberId,
+            MessageId: message.Id,
+            From: message.From,
+            SenderName: context.Contacts.FirstOrDefault(c => c.WaId == message.From)?.Profile?.Name));
+
+        await store.InsertManyAsync(rows, cancellationToken); // one round-trip per change
+    }
+}
+```
+
+The default batch implementations are what call the per-item handlers. If you override a batch method, the per-item handlers of that kind are no longer called unless your override calls `base.OnMessagesBatchAsync(...)` / `base.OnStatusesBatchAsync(...)`.
+
+**Warning:** a batch override owns its own per-item error handling. Without `base`, nothing isolates one item's failure from the rest of its batch. An exception that escapes the override goes to `OnErrorAsync` with the change's context (`WabaId` and `Metadata`; `Contact` is `null`), and the remaining changes of the delivery are still dispatched.
 
 ## Queued processing
 

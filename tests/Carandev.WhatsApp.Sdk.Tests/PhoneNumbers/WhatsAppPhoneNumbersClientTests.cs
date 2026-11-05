@@ -50,6 +50,62 @@ public class WhatsAppPhoneNumbersClientTests
     // ---------- ListPhoneNumbersAsync ----------
 
     [Fact]
+    public async Task ListPhoneNumbersAsync_WithOptions_SendsLimitAndCursorsAsEscapedQuery()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(
+            options,
+            _ => JsonResponse(HttpStatusCode.OK, """{"data":[]}"""));
+
+        await client.ListPhoneNumbersAsync(new PhoneNumbersListOptions { Limit = 2, After = "QVFI=", Before = "b&c" });
+
+        Assert.Equal(HttpMethod.Get, handler.LastRequest!.Method);
+        Assert.Equal(
+            ExpectedRequestUri(options, $"{options.WabaId}/phone_numbers?limit=2&after=QVFI%3D&before=b%26c"),
+            handler.LastRequest.RequestUri!.AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task ListPhoneNumbersAsync_WithEmptyOptions_SendsNoQuery_AndHonorsWabaOverride()
+    {
+        var options = CreateOptions();
+        var (client, handler) = CreateClient(
+            options,
+            _ => JsonResponse(HttpStatusCode.OK, """{"data":[]}"""));
+
+        await client.ListPhoneNumbersAsync(new PhoneNumbersListOptions(), "B");
+
+        Assert.Equal(ExpectedRequestUri(options, "B/phone_numbers"), handler.LastRequest!.RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task ListPhoneNumbersAsync_WithOptions_ReturnsNextCursor_SoCallersCanPage()
+    {
+        var options = CreateOptions();
+        var (client, _) = CreateClient(
+            options,
+            _ => JsonResponse(HttpStatusCode.OK, """{"data":[""" + PhoneNumberJson + """],"paging":{"cursors":{"before":"QVFA","after":"QVFI"}}}"""));
+
+        var result = await client.ListPhoneNumbersAsync(new PhoneNumbersListOptions { Limit = 1 });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("106540352242922", Assert.Single(result.Value!.Data!).Id);
+        Assert.Equal("QVFI", result.Value.Paging?.Cursors?.After);
+    }
+
+    [Fact]
+    public async Task ListPhoneNumbersAsync_WithOptions_ReturnsFailure_WithoutSendingRequest_WhenWabaIdMissing()
+    {
+        var options = CreateOptions(wabaId: null);
+        var (client, handler) = CreateClient(options);
+
+        var result = await client.ListPhoneNumbersAsync(new PhoneNumbersListOptions { Limit = 1 });
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(handler.LastRequest);
+    }
+
+    [Fact]
     public async Task ListPhoneNumbersAsync_SendsGetToPhoneNumbersEndpoint()
     {
         var options = CreateOptions();

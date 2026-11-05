@@ -58,7 +58,7 @@ public sealed class WhatsAppTemplatesClient : IWhatsAppTemplatesClient
             return Result<TemplatesPage<Template>>.Failure(MissingWabaIdError());
         }
 
-        var query = BuildQueryString(
+        var query = GraphQueryString.Build(
         [
             ("name", options?.Name),
             ("status", options?.Status),
@@ -126,7 +126,7 @@ public sealed class WhatsAppTemplatesClient : IWhatsAppTemplatesClient
             return Result.Failure(MissingWabaIdError());
         }
 
-        var query = BuildQueryString(
+        var query = GraphQueryString.Build(
         [
             ("hsm_id", templateId),
             ("name", name),
@@ -187,23 +187,6 @@ public sealed class WhatsAppTemplatesClient : IWhatsAppTemplatesClient
             Message = $"Request failed with status code {(int)response.StatusCode} ({response.StatusCode}).",
             Code = (int)response.StatusCode,
         };
-    }
-
-    private static string BuildQueryString(IReadOnlyList<(string Key, string? Value)> parameters)
-    {
-        List<string>? segments = null;
-        foreach (var (key, value) in parameters)
-        {
-            if (value is null)
-            {
-                continue;
-            }
-
-            segments ??= [];
-            segments.Add($"{key}={Uri.EscapeDataString(value)}");
-        }
-
-        return segments is null ? string.Empty : "?" + string.Join('&', segments);
     }
 
     private static WhatsAppError MissingWabaIdError() => new()

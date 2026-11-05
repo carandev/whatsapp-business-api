@@ -66,9 +66,9 @@ public sealed record WebhookChange
 }
 
 /// <summary>
-/// The phone number metadata carried by a <see cref="MessagesWebhookPayload"/> (and, in a future
-/// PR, a statuses payload), identifying which of the business's phone numbers received the
-/// webhook.
+/// The phone number metadata carried by a <see cref="MessagesWebhookPayload"/> or a
+/// <see cref="StatusesWebhookPayload"/>, identifying which of the business's phone numbers the
+/// webhook belongs to. Surfaced to handlers through <see cref="WebhookContext.Metadata"/>.
 /// </summary>
 public sealed record WebhookMetadata
 {
