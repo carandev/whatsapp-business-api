@@ -31,6 +31,35 @@ Uploads are checked before any HTTP call; content over the limit throws `MediaSi
 | Video | 16 MB |
 | Document | 100 MB |
 
+## Upload template header media
+
+Templates with an image, video, or document header need an example file handle, not a media ID. `UploadTemplateMediaAsync` gets one through the Graph Resumable Upload API and returns the handle string:
+
+```csharp
+await using var file = File.OpenRead("header.jpg");
+var handle = await media.UploadTemplateMediaAsync(file, "image/jpeg", "header.jpg");
+
+if (handle.IsSuccess)
+{
+    // Use handle.Value as the header example when you create the template.
+}
+```
+
+The method needs your Meta App ID. Set `WhatsAppOptions.AppId` (see [Configuration](../configuration/)) or pass `appIdOverride` per call. Without either, it returns a `Result` failure and sends no request.
+
+It makes two requests:
+
+1. `POST /{app-id}/uploads?file_name=...&file_length=...&file_type=...` starts an upload session.
+2. `POST /upload:<session>` sends the whole file with `Authorization: OAuth <token>` and `file_offset: 0`. The response's `h` is the handle.
+
+The same size limits as `UploadAsync` apply, checked before any HTTP call. A non-seekable stream is buffered into memory first, because the session needs the file length up front.
+
+<aside class="callout callout--note" data-label="Note">
+
+Resuming an interrupted upload is not automatic. Transient failures go through the normal retry policy; any other failure returns a `Result` failure, and you can call `UploadTemplateMediaAsync` again to start a new session.
+
+</aside>
+
 ## Download inbound media
 
 Inbound webhook messages carry a media ID. Resolve it to a short-lived URL, then download it. The SDK sends the access token on the download request for you.

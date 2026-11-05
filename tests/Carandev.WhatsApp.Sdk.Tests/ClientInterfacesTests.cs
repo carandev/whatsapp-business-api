@@ -83,8 +83,46 @@ public class ClientInterfacesTests
                 nameof(IWhatsAppMediaClient.UploadAsync),
                 nameof(IWhatsAppMediaClient.UploadAsync),
                 nameof(IWhatsAppMediaClient.UploadAsync),
+                nameof(IWhatsAppMediaClient.UploadTemplateMediaAsync),
             },
             methodNames);
+    }
+
+    [Fact]
+    public async Task IWhatsAppMediaClient_UploadTemplateMediaAsync_DefaultImplementation_ThrowsNotSupported()
+    {
+        IWhatsAppMediaClient client = new ThirdPartyMediaClient();
+
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() =>
+            client.UploadTemplateMediaAsync(new MemoryStream([1]), "image/jpeg", "a.jpg"));
+
+        Assert.Contains(nameof(IWhatsAppMediaClient.UploadTemplateMediaAsync), exception.Message);
+        Assert.Contains(nameof(ThirdPartyMediaClient), exception.Message);
+    }
+
+    /// <summary>
+    /// A minimal third-party implementation written against the interface before
+    /// <c>UploadTemplateMediaAsync</c> existed: it implements only the original members.
+    /// </summary>
+    private sealed class ThirdPartyMediaClient : IWhatsAppMediaClient
+    {
+        public Task<Result<Sdk.Models.Media.MediaUploadResponse>> UploadAsync(Stream content, string mimeType, string filename, string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<Sdk.Models.Media.MediaUploadResponse>> UploadAsync(byte[] content, string mimeType, string filename, string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<Sdk.Models.Media.MediaUploadResponse>> UploadAsync(string filePath, string mimeType, string? filename = null, string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<Sdk.Models.Media.MediaUrlResponse>> GetMediaUrlAsync(string mediaId, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<Stream>> DownloadAsync(string url, CancellationToken ct = default) =>
+            throw new NotImplementedException();
+
+        public Task<Result<byte[]>> DownloadBytesAsync(string url, CancellationToken ct = default) =>
+            throw new NotImplementedException();
     }
 
     [Fact]

@@ -32,6 +32,14 @@ public sealed class WhatsAppOptions
     public string? WabaId { get; set; }
 
     /// <summary>
+    /// The Meta App ID used by the Graph Resumable Upload API (<c>POST /{app-id}/uploads</c>), for
+    /// example by <c>IWhatsAppMediaClient.UploadTemplateMediaAsync</c> to obtain template media
+    /// header handles. Optional — only required when a consumer uploads template media without a
+    /// per-call override.
+    /// </summary>
+    public string? AppId { get; set; }
+
+    /// <summary>
     /// The Meta Graph API version segment, e.g. <c>v21.0</c>. Defaults to <c>v21.0</c>.
     /// </summary>
     public string ApiVersion { get; set; } = "v21.0";

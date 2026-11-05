@@ -148,4 +148,51 @@ public interface IWhatsAppMediaClient
     /// failed <see cref="Result{T}"/> when the download fails.
     /// </returns>
     Task<Result<byte[]>> DownloadBytesAsync(string url, CancellationToken ct = default);
+
+    /// <summary>
+    /// Uploads template media through the Graph Resumable Upload API and returns the file handle
+    /// (<c>h</c>) used as a media header example when creating a message template. Unlike
+    /// <see cref="UploadAsync(Stream, string, string, string?, CancellationToken)"/>, which returns
+    /// a message media id, this starts an upload session via
+    /// <c>POST /{app-id}/uploads?file_name=&amp;file_length=&amp;file_type=</c>, then uploads the
+    /// whole content in a single <c>POST /upload:&lt;session&gt;</c> with
+    /// <c>Authorization: OAuth &lt;token&gt;</c> and <c>file_offset: 0</c>.
+    /// </summary>
+    /// <remarks>
+    /// Resuming an interrupted upload from a non-zero <c>file_offset</c> is not automatic: a
+    /// failed upload request is retried only by the configured retry pipeline, and otherwise
+    /// returns a failed <see cref="Result{T}"/>. Call this method again to start a new session.
+    /// The default implementation throws <see cref="NotSupportedException"/>, so implementations
+    /// written before this member existed keep compiling.
+    /// </remarks>
+    /// <param name="content">
+    /// The media content. Seekable streams are validated against <see cref="Stream.Length"/>;
+    /// non-seekable streams are buffered into memory (capped at the size ceiling plus one byte)
+    /// first, because the session needs the content length up front.
+    /// </param>
+    /// <param name="mimeType">
+    /// The content's MIME type (e.g. <c>image/jpeg</c>), sent as <c>file_type</c> and used to
+    /// resolve the applicable MIME-category size ceiling.
+    /// </param>
+    /// <param name="fileName">The file name, sent as <c>file_name</c>.</param>
+    /// <param name="appIdOverride">
+    /// An optional Meta App ID that takes precedence over <see cref="WhatsAppOptions.AppId"/>.
+    /// </param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> wrapping the file handle on success; a failed
+    /// <see cref="Result{T}"/> when no App ID is available, when either Graph API call fails, or
+    /// when a response lacks the expected session id or handle.
+    /// </returns>
+    /// <exception cref="MediaSizeExceededException">
+    /// Thrown when <paramref name="content"/> exceeds the size ceiling for
+    /// <paramref name="mimeType"/>'s category. Thrown before any HTTP request is sent.
+    /// </exception>
+    /// <exception cref="NotSupportedException">
+    /// Thrown by the default interface implementation when the implementing type does not
+    /// provide this member.
+    /// </exception>
+    Task<Result<string>> UploadTemplateMediaAsync(Stream content, string mimeType, string fileName, string? appIdOverride = null, CancellationToken ct = default) =>
+        throw new NotSupportedException(
+            $"{GetType().FullName} does not implement {nameof(UploadTemplateMediaAsync)}. Use WhatsAppMediaClient or implement the member.");
 }
