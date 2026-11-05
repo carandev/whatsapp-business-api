@@ -183,6 +183,11 @@ internal static partial class TemplatePlaceholders
         }
     }
 
+    /// <summary>
+    /// Returns whether <paramref name="text"/> contains at least one named placeholder.
+    /// </summary>
+    internal static bool HasNamedPlaceholders(string text) => Extract(text).Named.Count > 0;
+
     private static (HashSet<string> Positional, HashSet<string> Named) Extract(string text)
     {
         var positional = new HashSet<string>(StringComparer.Ordinal);

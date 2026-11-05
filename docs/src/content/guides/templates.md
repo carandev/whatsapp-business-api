@@ -39,6 +39,21 @@ new UrlButton("Track order", "https://example.com/track/{{1}}") { Examples = ["4
 
 Examples must match the placeholders: one value per distinct positional placeholder, in order, or exactly one entry per named placeholder. A mismatch throws an `ArgumentException`.
 
+### Parameter format
+
+`CreateTemplateRequest.ParameterFormat` sets Meta's `parameter_format` (`positional` or `named`). When you leave it null, the request sends `named` if the body or a text header uses named placeholders, and omits the field otherwise; Meta then treats the template as positional.
+
+```csharp
+var request = new CreateTemplateRequest(
+    name: "order_named",
+    category: TemplateCategory.Utility,
+    language: "en_US",
+    components: [new BodyComponent("Hi {{first_name}}!") { NamedExamples = [new("first_name", "Ana")] }])
+{
+    ParameterFormat = TemplateParameterFormat.Named,
+};
+```
+
 Button types: `UrlButton`, `PhoneNumberButton`, `QuickReplyButton`, `CopyCodeButton`, `OtpButton`, `CatalogButton`, and `FlowButton`. Headers: `TextHeaderComponent`, `ImageHeaderComponent`, `VideoHeaderComponent`, and `DocumentHeaderComponent`; media headers take an example handle from a resumable upload.
 
 ## List
