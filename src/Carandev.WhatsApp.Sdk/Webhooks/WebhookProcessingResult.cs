@@ -13,7 +13,7 @@ public enum WebhookProcessingResult
     /// <summary>
     /// The payload was parsed and every message/status item was dispatched to the handlers.
     /// Exceptions thrown by individual handlers are routed to
-    /// <see cref="WhatsAppWebhookHandlers.OnErrorAsync"/> and do not change this result.
+    /// <see cref="WhatsAppWebhookHandlers.OnErrorAsync(Exception, Models.Webhooks.WebhookContext, CancellationToken)"/> and do not change this result.
     /// </summary>
     Processed,
 
@@ -24,7 +24,7 @@ public enum WebhookProcessingResult
     InvalidSignature,
 
     /// <summary>
-    /// The body is not a valid webhook envelope. <see cref="WhatsAppWebhookHandlers.OnErrorAsync"/>
+    /// The body is not a valid webhook envelope. <see cref="WhatsAppWebhookHandlers.OnErrorAsync(Exception, Models.Webhooks.WebhookContext, CancellationToken)"/>
     /// was invoked with the parsing exception.
     /// </summary>
     InvalidPayload,
