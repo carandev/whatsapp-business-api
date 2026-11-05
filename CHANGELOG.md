@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.2.0](https://github.com/carandev/whatsapp-business-api/compare/v0.1.0...v0.2.0) (2026-11-05)
+
+
+### Features
+
+* **media:** add resumable upload for template media header handles ([89f8ee4](https://github.com/carandev/whatsapp-business-api/commit/89f8ee4420455bf1fd7cfceebf1951932f94404c)), closes [#52](https://github.com/carandev/whatsapp-business-api/issues/52)
+* **media:** resume a failed template media upload from the reported offset ([debbc61](https://github.com/carandev/whatsapp-business-api/commit/debbc61acba9929ae9d634533ab1ddafc538c0bf)), closes [#52](https://github.com/carandev/whatsapp-business-api/issues/52)
+* **phone-numbers:** add cursor paging to ListPhoneNumbersAsync ([ac0afaf](https://github.com/carandev/whatsapp-business-api/commit/ac0afaf0780cd037c560c554275ccb4ed1fbd8ce)), closes [#53](https://github.com/carandev/whatsapp-business-api/issues/53)
+* SDK 0.2.0 — webhook context, dependency fix, timeout, templates, media, paging ([cd6b8ae](https://github.com/carandev/whatsapp-business-api/commit/cd6b8ae5cc0c9ab620efaecc78da79f2c4d57b8d))
+* **templates:** add examples for body, text header and URL button variables ([b9caf54](https://github.com/carandev/whatsapp-business-api/commit/b9caf54dee69dfdc1d586afa02c41c823ea956f9)), closes [#50](https://github.com/carandev/whatsapp-business-api/issues/50)
+* **templates:** add parameter_format to CreateTemplateRequest ([3ad54cf](https://github.com/carandev/whatsapp-business-api/commit/3ad54cf19c13fcb76596d4fa669d570107c17d5d)), closes [#51](https://github.com/carandev/whatsapp-business-api/issues/51)
+* **webhooks:** add batch handlers for per-change dispatch ([17a8dab](https://github.com/carandev/whatsapp-business-api/commit/17a8dab8378ec22a6918abbc13bf4c34a77be8d5)), closes [#55](https://github.com/carandev/whatsapp-business-api/issues/55)
+* **webhooks:** pass WebhookContext with receiving number and sender profile to handlers ([0826c8e](https://github.com/carandev/whatsapp-business-api/commit/0826c8efd52c695973d9c9588581daad7998f296)), closes [#45](https://github.com/carandev/whatsapp-business-api/issues/45)
+
+
+### Bug Fixes
+
+* **deps:** raise Microsoft.Extensions.* floor to 10.0.12 ([f73e540](https://github.com/carandev/whatsapp-business-api/commit/f73e5405713c33e5f2a544613555b6c2fa6df5fd)), closes [#46](https://github.com/carandev/whatsapp-business-api/issues/46)
+* **messages:** make ListRow description optional ([ee66ce0](https://github.com/carandev/whatsapp-business-api/commit/ee66ce0716f9b140070545bdf0c097dc21d65d97)), closes [#48](https://github.com/carandev/whatsapp-business-api/issues/48)
+* **resilience:** enforce WhatsAppOptions.Timeout per attempt ([9674b1f](https://github.com/carandev/whatsapp-business-api/commit/9674b1fa849b1c8bec41b62e1d3eda3897796436)), closes [#49](https://github.com/carandev/whatsapp-business-api/issues/49)
+* **templates:** serialize media header example as header_handle ([bcdcd17](https://github.com/carandev/whatsapp-business-api/commit/bcdcd1785c40500f327347c22957b9b22e91d559)), closes [#47](https://github.com/carandev/whatsapp-business-api/issues/47)
+* **webhooks:** let OnErrorAsync exceptions escape without a second OnErrorAsync call ([ad3e8d1](https://github.com/carandev/whatsapp-business-api/commit/ad3e8d11677fdc2d510022373d10935c639c6afd))
+
 ## 0.1.0 (2026-11-04)
 
 
