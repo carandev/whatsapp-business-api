@@ -43,6 +43,45 @@ jobs:
       - name: Pack
         run: dotnet pack --configuration Release --no-build --output artifacts
 
+      # Restores the packed SDK into a fresh net10.0 consumer with TreatWarningsAsErrors, so a
+      # dependency floor below what a transitive package requires (NU1605 downgrade) fails here
+      # instead of in consumers' builds. net10.0 is where Microsoft.Extensions.Http.Resilience
+      # raises the Microsoft.Extensions.* floor.
+      - name: Consumer restore check (net10.0)
+        run: |
+          consumer="$RUNNER_TEMP/consumer"
+          mkdir -p "$consumer"
+          cat > "$consumer/nuget.config" <<EOF
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="local" value="$GITHUB_WORKSPACE/artifacts" />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+            <!-- Resolve the SDK only from the freshly packed artifacts, never the published package. -->
+            <packageSourceMapping>
+              <packageSource key="local">
+                <package pattern="Carandev.WhatsApp.Sdk" />
+              </packageSource>
+              <packageSource key="nuget.org">
+                <package pattern="*" />
+              </packageSource>
+            </packageSourceMapping>
+          </configuration>
+          EOF
+          cat > "$consumer/Consumer.csproj" <<'EOF'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net10.0</TargetFramework>
+              <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="Carandev.WhatsApp.Sdk" Version="*-*" />
+            </ItemGroup>
+          </Project>
+          EOF
+          dotnet restore "$consumer/Consumer.csproj"
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
