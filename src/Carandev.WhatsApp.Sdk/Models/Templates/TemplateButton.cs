@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Carandev.WhatsApp.Sdk.Models.Templates;
@@ -265,4 +266,33 @@ public sealed record FlowButton : TemplateButton
     /// </summary>
     [JsonPropertyName("flow_id")]
     public string FlowId { get; }
+}
+
+/// <summary>
+/// A button read from Meta whose <c>type</c> the SDK does not model, for example
+/// <c>VOICE_CALL</c> or <c>MPM</c>. It keeps the button in <see cref="ButtonsComponent.Buttons"/>
+/// instead of failing the whole response.
+/// </summary>
+/// <remarks>
+/// Serializing it writes <see cref="RawJson"/> unchanged. The SDK creates it only when reading
+/// templates.
+/// </remarks>
+public sealed record UnknownTemplateButton : TemplateButton
+{
+    internal UnknownTemplateButton(string type, JsonElement rawJson)
+    {
+        Type = type;
+        RawJson = rawJson;
+    }
+
+    /// <summary>
+    /// Meta's <c>type</c> value exactly as returned, for example <c>VOICE_CALL</c>. Empty when the
+    /// button has no string <c>type</c>.
+    /// </summary>
+    public string Type { get; }
+
+    /// <summary>
+    /// The complete button object exactly as Meta returned it, including <c>type</c>.
+    /// </summary>
+    public JsonElement RawJson { get; }
 }
