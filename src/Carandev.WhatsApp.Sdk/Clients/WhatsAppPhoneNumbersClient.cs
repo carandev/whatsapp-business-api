@@ -97,6 +97,76 @@ public sealed class WhatsAppPhoneNumbersClient : IWhatsAppPhoneNumbersClient
         return await ReadResultAsync(response, ct).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
+    public Task<Result> RegisterAsync(string pin, string? dataLocalizationRegion = null, string? phoneNumberIdOverride = null, CancellationToken ct = default)
+    {
+        PhoneNumberArguments.ThrowIfInvalidPin(pin, nameof(pin));
+        PhoneNumberArguments.ThrowIfInvalidRegion(dataLocalizationRegion, nameof(dataLocalizationRegion));
+
+        return PostAsync(
+            "{phone_number_id}/register",
+            phoneNumberIdOverride,
+            CreateJsonContent(new RegisterPhoneNumberRequest(pin, dataLocalizationRegion), WhatsAppJsonSerializerContext.Default.RegisterPhoneNumberRequest),
+            ct);
+    }
+
+    /// <inheritdoc />
+    public Task<Result> DeregisterAsync(string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+        PostAsync("{phone_number_id}/deregister", phoneNumberIdOverride, content: null, ct);
+
+    /// <inheritdoc />
+    public Task<Result> SetTwoStepVerificationPinAsync(string pin, string? phoneNumberIdOverride = null, CancellationToken ct = default)
+    {
+        PhoneNumberArguments.ThrowIfInvalidPin(pin, nameof(pin));
+
+        return PostAsync(
+            "{phone_number_id}",
+            phoneNumberIdOverride,
+            CreateJsonContent(new TwoStepVerificationPinRequest(pin), WhatsAppJsonSerializerContext.Default.TwoStepVerificationPinRequest),
+            ct);
+    }
+
+    /// <inheritdoc />
+    public Task<Result> SetWebhookOverrideAsync(Uri callbackUri, string verifyToken, string? phoneNumberIdOverride = null, CancellationToken ct = default)
+    {
+        PhoneNumberArguments.ThrowIfInvalidCallback(callbackUri, nameof(callbackUri));
+        ArgumentException.ThrowIfNullOrWhiteSpace(verifyToken);
+
+        return PostWebhookOverrideAsync(new PhoneNumberWebhookOverride(callbackUri.AbsoluteUri, verifyToken), phoneNumberIdOverride, ct);
+    }
+
+    /// <inheritdoc />
+    public Task<Result> ClearWebhookOverrideAsync(string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+        PostWebhookOverrideAsync(new PhoneNumberWebhookOverride(string.Empty, verifyToken: null), phoneNumberIdOverride, ct);
+
+    /// <inheritdoc />
+    public async Task<Result<PhoneNumberWebhookConfiguration>> GetWebhookConfigurationAsync(string? phoneNumberIdOverride = null, CancellationToken ct = default)
+    {
+        var httpRequest = _client.CreateRequest(HttpMethod.Get, "{phone_number_id}?fields=webhook_configuration", phoneNumberIdOverride);
+
+        var response = await _client.SendAsync(httpRequest, ct).ConfigureAwait(false);
+        var result = await ReadResultAsync(response, WhatsAppJsonSerializerContext.Default.PhoneNumber, ct).ConfigureAwait(false);
+        return result.IsSuccess
+            ? Result<PhoneNumberWebhookConfiguration>.Success(result.Value!.WebhookConfiguration ?? new PhoneNumberWebhookConfiguration())
+            : Result<PhoneNumberWebhookConfiguration>.Failure(result.Error!);
+    }
+
+    private Task<Result> PostWebhookOverrideAsync(PhoneNumberWebhookOverride webhookOverride, string? phoneNumberIdOverride, CancellationToken ct) =>
+        PostAsync(
+            "{phone_number_id}",
+            phoneNumberIdOverride,
+            CreateJsonContent(new PhoneNumberWebhookOverrideRequest(webhookOverride), WhatsAppJsonSerializerContext.Default.PhoneNumberWebhookOverrideRequest),
+            ct);
+
+    private async Task<Result> PostAsync(string relativePathTemplate, string? phoneNumberIdOverride, HttpContent? content, CancellationToken ct)
+    {
+        var httpRequest = _client.CreateRequest(HttpMethod.Post, relativePathTemplate, phoneNumberIdOverride);
+        httpRequest.Content = content;
+
+        var response = await _client.SendAsync(httpRequest, ct).ConfigureAwait(false);
+        return await ReadResultAsync(response, ct).ConfigureAwait(false);
+    }
+
     private static HttpContent CreateJsonContent<T>(T value, JsonTypeInfo<T> typeInfo)
     {
         var json = JsonSerializer.Serialize(value, typeInfo);

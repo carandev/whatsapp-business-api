@@ -98,12 +98,30 @@ public sealed class PhoneNumberThroughput
 
 /// <summary>
 /// A business phone number's webhook configuration, as reported by
-/// <see cref="PhoneNumber.WebhookConfiguration"/>.
+/// <see cref="PhoneNumber.WebhookConfiguration"/> and
+/// <c>IWhatsAppPhoneNumbersClient.GetWebhookConfigurationAsync</c>. Meta delivers a webhook to the
+/// first callback set among <see cref="PhoneNumber"/>, <see cref="WhatsAppBusinessAccount"/>, and
+/// <see cref="Application"/>.
 /// </summary>
 public sealed class PhoneNumberWebhookConfiguration
 {
     /// <summary>
-    /// The Meta application currently subscribed to this phone number's webhooks.
+    /// The phone number's own callback URL override, set with
+    /// <c>IWhatsAppPhoneNumbersClient.SetWebhookOverrideAsync</c>. Null when the number has no
+    /// override.
+    /// </summary>
+    [JsonPropertyName("phone_number")]
+    public string? PhoneNumber { get; set; }
+
+    /// <summary>
+    /// The callback URL override of the WhatsApp Business Account the number belongs to. Null when
+    /// the WABA has no override.
+    /// </summary>
+    [JsonPropertyName("whatsapp_business_account")]
+    public string? WhatsAppBusinessAccount { get; set; }
+
+    /// <summary>
+    /// The callback URL of the Meta app subscribed to this phone number's webhooks.
     /// </summary>
     [JsonPropertyName("application")]
     public string? Application { get; set; }

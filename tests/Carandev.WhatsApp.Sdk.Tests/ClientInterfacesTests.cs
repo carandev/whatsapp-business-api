@@ -117,6 +117,28 @@ public class ClientInterfacesTests
         Assert.Contains(nameof(ThirdPartyPhoneNumbersClient), exception.Message);
     }
 
+    public static TheoryData<string, Func<IWhatsAppPhoneNumbersClient, Task>> PhoneNumberManagementMembers() => new()
+    {
+        { nameof(IWhatsAppPhoneNumbersClient.RegisterAsync), c => c.RegisterAsync("123456") },
+        { nameof(IWhatsAppPhoneNumbersClient.DeregisterAsync), c => c.DeregisterAsync() },
+        { nameof(IWhatsAppPhoneNumbersClient.SetTwoStepVerificationPinAsync), c => c.SetTwoStepVerificationPinAsync("123456") },
+        { nameof(IWhatsAppPhoneNumbersClient.SetWebhookOverrideAsync), c => c.SetWebhookOverrideAsync(new Uri("https://example.com"), "t") },
+        { nameof(IWhatsAppPhoneNumbersClient.ClearWebhookOverrideAsync), c => c.ClearWebhookOverrideAsync() },
+        { nameof(IWhatsAppPhoneNumbersClient.GetWebhookConfigurationAsync), c => c.GetWebhookConfigurationAsync() },
+    };
+
+    [Theory]
+    [MemberData(nameof(PhoneNumberManagementMembers))]
+    public async Task IWhatsAppPhoneNumbersClient_ManagementMembers_DefaultImplementation_ThrowsNotSupported(
+        string member,
+        Func<IWhatsAppPhoneNumbersClient, Task> call)
+    {
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() => call(new ThirdPartyPhoneNumbersClient()));
+
+        Assert.Contains(member, exception.Message);
+        Assert.Contains(nameof(ThirdPartyPhoneNumbersClient), exception.Message);
+    }
+
     /// <summary>
     /// A third-party implementation written against 0.1.0: it does not implement the options
     /// overload and must still compile.
@@ -218,10 +240,16 @@ public class ClientInterfacesTests
         Assert.Equal(
             new[]
             {
+                nameof(IWhatsAppPhoneNumbersClient.ClearWebhookOverrideAsync),
+                nameof(IWhatsAppPhoneNumbersClient.DeregisterAsync),
                 nameof(IWhatsAppPhoneNumbersClient.GetPhoneNumberAsync),
+                nameof(IWhatsAppPhoneNumbersClient.GetWebhookConfigurationAsync),
                 nameof(IWhatsAppPhoneNumbersClient.ListPhoneNumbersAsync),
                 nameof(IWhatsAppPhoneNumbersClient.ListPhoneNumbersAsync),
+                nameof(IWhatsAppPhoneNumbersClient.RegisterAsync),
                 nameof(IWhatsAppPhoneNumbersClient.RequestVerificationCodeAsync),
+                nameof(IWhatsAppPhoneNumbersClient.SetTwoStepVerificationPinAsync),
+                nameof(IWhatsAppPhoneNumbersClient.SetWebhookOverrideAsync),
                 nameof(IWhatsAppPhoneNumbersClient.VerifyCodeAsync),
             },
             methodNames);

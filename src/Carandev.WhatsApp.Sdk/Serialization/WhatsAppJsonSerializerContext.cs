@@ -98,6 +98,10 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(VerificationCodeMethod))]
 [JsonSerializable(typeof(RequestVerificationCodeRequest))]
 [JsonSerializable(typeof(VerifyCodeRequest))]
+// Phone numbers — registration, two-step PIN, and webhook override (issues #64, #66)
+[JsonSerializable(typeof(RegisterPhoneNumberRequest))]
+[JsonSerializable(typeof(TwoStepVerificationPinRequest))]
+[JsonSerializable(typeof(PhoneNumberWebhookOverrideRequest))]
 // Business profile — DTOs and serializer registration (PR1 of issue #5)
 [JsonSerializable(typeof(global::Carandev.WhatsApp.Sdk.Models.BusinessProfile.BusinessProfile))]
 [JsonSerializable(typeof(BusinessProfileResponse))]
