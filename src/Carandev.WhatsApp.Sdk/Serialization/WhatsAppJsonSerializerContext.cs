@@ -171,6 +171,11 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(WebhookPricing))]
 [JsonSerializable(typeof(WebhookError))]
 [JsonSerializable(typeof(WebhookErrorData))]
+// Webhooks — app subscriptions to a WABA (issue #65)
+[JsonSerializable(typeof(SubscribedApp))]
+[JsonSerializable(typeof(SubscribedAppData))]
+[JsonSerializable(typeof(TemplatesPage<SubscribedApp>))]
+[JsonSerializable(typeof(SubscribeAppRequest))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }

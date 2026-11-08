@@ -15,6 +15,28 @@ Webhook support ships in the same `Carandev.WhatsApp.Sdk` package and does not d
 
 Configure `WhatsApp:AppSecret` (the app secret from **App settings > Basic**) and `WhatsApp:WebhookVerifyToken`, then map two endpoints.
 
+## Subscribe the app to a WABA
+
+A WABA delivers webhooks to your app only after the app subscribes to it. `IWhatsAppWebhooksClient` does this from code, so connecting a new WABA needs no dashboard step. Every call uses `WhatsAppOptions.WabaId` unless you pass `wabaIdOverride`:
+
+```csharp
+// Subscribe the app that owns the access token. Webhooks go to the app's callback.
+await webhooks.SubscribeAppAsync();
+
+// Or send this WABA's webhooks to another callback, for example a staging environment.
+await webhooks.SubscribeAppAsync(new Uri("https://staging.example.com/webhooks/whatsapp"), "staging-verify-token");
+
+var apps = await webhooks.ListSubscribedAppsAsync();
+foreach (var app in apps.Value?.Data ?? [])
+{
+    Console.WriteLine($"{app.App?.Name} ({app.App?.Id}) -> {app.OverrideCallbackUri ?? "app callback"}");
+}
+
+await webhooks.UnsubscribeAppAsync();
+```
+
+The callback and verify token go together: passing only one, a callback that is not an absolute HTTPS URL, or an empty token throws `ArgumentException` before any request is sent. Calling `SubscribeAppAsync()` without them removes an existing WABA override. A single phone number can also override both callbacks with `IWhatsAppPhoneNumbersClient.SetWebhookOverrideAsync`, described in the phone numbers guide.
+
 ## ASP.NET Core Minimal APIs
 
 ```csharp
