@@ -63,6 +63,7 @@ public sealed record CreateTemplateRequest
     /// The template's components.
     /// </summary>
     [JsonPropertyName("components")]
+    [JsonConverter(typeof(TemplateComponentListConverter))]
     public IReadOnlyList<TemplateComponent> Components { get; }
 
     /// <summary>

@@ -27,5 +27,6 @@ public sealed record ButtonsComponent : TemplateComponent
     /// The buttons for this component, in display order.
     /// </summary>
     [JsonPropertyName("buttons")]
+    [JsonConverter(typeof(TemplateButtonListConverter))]
     public IReadOnlyList<TemplateButton> Buttons { get; }
 }

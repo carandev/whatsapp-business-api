@@ -51,6 +51,7 @@ public sealed record UpdateTemplateRequest
     /// <see langword="null"/>.
     /// </summary>
     [JsonPropertyName("components")]
+    [JsonConverter(typeof(TemplateComponentListConverter))]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<TemplateComponent>? Components { get; }
 }

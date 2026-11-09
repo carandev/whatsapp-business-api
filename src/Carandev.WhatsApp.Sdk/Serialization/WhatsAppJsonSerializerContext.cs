@@ -98,6 +98,10 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(VerificationCodeMethod))]
 [JsonSerializable(typeof(RequestVerificationCodeRequest))]
 [JsonSerializable(typeof(VerifyCodeRequest))]
+// Phone numbers — registration, two-step PIN, and webhook override (issues #64, #66)
+[JsonSerializable(typeof(RegisterPhoneNumberRequest))]
+[JsonSerializable(typeof(TwoStepVerificationPinRequest))]
+[JsonSerializable(typeof(PhoneNumberWebhookOverrideRequest))]
 // Business profile — DTOs and serializer registration (PR1 of issue #5)
 [JsonSerializable(typeof(global::Carandev.WhatsApp.Sdk.Models.BusinessProfile.BusinessProfile))]
 [JsonSerializable(typeof(BusinessProfileResponse))]
@@ -167,6 +171,11 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(WebhookPricing))]
 [JsonSerializable(typeof(WebhookError))]
 [JsonSerializable(typeof(WebhookErrorData))]
+// Webhooks — app subscriptions to a WABA (issue #65)
+[JsonSerializable(typeof(SubscribedApp))]
+[JsonSerializable(typeof(SubscribedAppData))]
+[JsonSerializable(typeof(TemplatesPage<SubscribedApp>))]
+[JsonSerializable(typeof(SubscribeAppRequest))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }

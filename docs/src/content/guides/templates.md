@@ -83,6 +83,15 @@ if (header is UnknownHeaderComponent unknown)
 }
 ```
 
+The same holds for components and buttons. A component with a `type` the SDK does not model, such as `CAROUSEL` or `LIMITED_TIME_OFFER`, reads as `UnknownTemplateComponent`, and a button such as `VOICE_CALL` reads as `UnknownTemplateButton`. Both keep `Type` and the original object in `RawJson`, and serialize back to that JSON unchanged, so a template read from Meta can be sent again:
+
+```csharp
+foreach (var component in template.Components?.OfType<UnknownTemplateComponent>() ?? [])
+{
+    Console.WriteLine($"Unsupported component {component.Type}: {component.RawJson}");
+}
+```
+
 ## Get, update, delete
 
 ```csharp

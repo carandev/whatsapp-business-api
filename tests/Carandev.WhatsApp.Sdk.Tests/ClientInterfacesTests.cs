@@ -30,21 +30,48 @@ public class ClientInterfacesTests
     }
 
     [Fact]
-    public void ResourceClientInterfaces_DeclareOnlyZeroOrDocumentedPlaceholderMembers()
+    public void IWhatsAppWebhooksClient_DeclaresOnlyItsDocumentedMembers()
     {
-        var resourceInterfaces = ExpectedInterfaces.Where(type =>
-            type != typeof(IWhatsAppClient) &&
-            type != typeof(IWhatsAppTemplatesClient) &&
-            type != typeof(IWhatsAppMessagesClient) &&
-            type != typeof(IWhatsAppMediaClient) &&
-            type != typeof(IWhatsAppPhoneNumbersClient) &&
-            type != typeof(IWhatsAppBusinessProfileClient));
+        var methodNames = typeof(IWhatsAppWebhooksClient)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(m => m.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
 
-        Assert.All(resourceInterfaces, type =>
-        {
-            var members = type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            Assert.Empty(members);
-        });
+        Assert.Equal(
+            new[]
+            {
+                nameof(IWhatsAppWebhooksClient.ListSubscribedAppsAsync),
+                nameof(IWhatsAppWebhooksClient.SubscribeAppAsync),
+                nameof(IWhatsAppWebhooksClient.UnsubscribeAppAsync),
+            },
+            methodNames);
+    }
+
+    public static TheoryData<string, Func<IWhatsAppWebhooksClient, Task>> WebhooksMembers() => new()
+    {
+        { nameof(IWhatsAppWebhooksClient.SubscribeAppAsync), c => c.SubscribeAppAsync() },
+        { nameof(IWhatsAppWebhooksClient.ListSubscribedAppsAsync), c => c.ListSubscribedAppsAsync() },
+        { nameof(IWhatsAppWebhooksClient.UnsubscribeAppAsync), c => c.UnsubscribeAppAsync() },
+    };
+
+    [Theory]
+    [MemberData(nameof(WebhooksMembers))]
+    public async Task IWhatsAppWebhooksClient_DefaultImplementation_ThrowsNotSupported(
+        string member,
+        Func<IWhatsAppWebhooksClient, Task> call)
+    {
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() => call(new ThirdPartyWebhooksClient()));
+
+        Assert.Contains(member, exception.Message);
+        Assert.Contains(nameof(ThirdPartyWebhooksClient), exception.Message);
+    }
+
+    /// <summary>
+    /// A third-party implementation written when the interface had no members.
+    /// </summary>
+    private sealed class ThirdPartyWebhooksClient : IWhatsAppWebhooksClient
+    {
     }
 
     [Fact]
@@ -114,6 +141,28 @@ public class ClientInterfacesTests
         var exception = await Assert.ThrowsAsync<NotSupportedException>(() =>
             client.ListPhoneNumbersAsync(new PhoneNumbersListOptions { Limit = 1 }));
 
+        Assert.Contains(nameof(ThirdPartyPhoneNumbersClient), exception.Message);
+    }
+
+    public static TheoryData<string, Func<IWhatsAppPhoneNumbersClient, Task>> PhoneNumberManagementMembers() => new()
+    {
+        { nameof(IWhatsAppPhoneNumbersClient.RegisterAsync), c => c.RegisterAsync("123456") },
+        { nameof(IWhatsAppPhoneNumbersClient.DeregisterAsync), c => c.DeregisterAsync() },
+        { nameof(IWhatsAppPhoneNumbersClient.SetTwoStepVerificationPinAsync), c => c.SetTwoStepVerificationPinAsync("123456") },
+        { nameof(IWhatsAppPhoneNumbersClient.SetWebhookOverrideAsync), c => c.SetWebhookOverrideAsync(new Uri("https://example.com"), "t") },
+        { nameof(IWhatsAppPhoneNumbersClient.ClearWebhookOverrideAsync), c => c.ClearWebhookOverrideAsync() },
+        { nameof(IWhatsAppPhoneNumbersClient.GetWebhookConfigurationAsync), c => c.GetWebhookConfigurationAsync() },
+    };
+
+    [Theory]
+    [MemberData(nameof(PhoneNumberManagementMembers))]
+    public async Task IWhatsAppPhoneNumbersClient_ManagementMembers_DefaultImplementation_ThrowsNotSupported(
+        string member,
+        Func<IWhatsAppPhoneNumbersClient, Task> call)
+    {
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() => call(new ThirdPartyPhoneNumbersClient()));
+
+        Assert.Contains(member, exception.Message);
         Assert.Contains(nameof(ThirdPartyPhoneNumbersClient), exception.Message);
     }
 
@@ -218,10 +267,16 @@ public class ClientInterfacesTests
         Assert.Equal(
             new[]
             {
+                nameof(IWhatsAppPhoneNumbersClient.ClearWebhookOverrideAsync),
+                nameof(IWhatsAppPhoneNumbersClient.DeregisterAsync),
                 nameof(IWhatsAppPhoneNumbersClient.GetPhoneNumberAsync),
+                nameof(IWhatsAppPhoneNumbersClient.GetWebhookConfigurationAsync),
                 nameof(IWhatsAppPhoneNumbersClient.ListPhoneNumbersAsync),
                 nameof(IWhatsAppPhoneNumbersClient.ListPhoneNumbersAsync),
+                nameof(IWhatsAppPhoneNumbersClient.RegisterAsync),
                 nameof(IWhatsAppPhoneNumbersClient.RequestVerificationCodeAsync),
+                nameof(IWhatsAppPhoneNumbersClient.SetTwoStepVerificationPinAsync),
+                nameof(IWhatsAppPhoneNumbersClient.SetWebhookOverrideAsync),
                 nameof(IWhatsAppPhoneNumbersClient.VerifyCodeAsync),
             },
             methodNames);
