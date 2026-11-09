@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/carandev/whatsapp-business-api/compare/v0.2.1...v0.3.0) (2026-11-09)
+
+
+### Features
+
+* **phone-numbers:** register, deregister, two-step PIN, and per number webhook override ([964e5f3](https://github.com/carandev/whatsapp-business-api/commit/964e5f35d606fe77982c4aaf44808509154f2924)), closes [#64](https://github.com/carandev/whatsapp-business-api/issues/64) [#66](https://github.com/carandev/whatsapp-business-api/issues/66)
+* **webhooks:** subscribe, list, and unsubscribe apps on a WABA ([5cdc9ab](https://github.com/carandev/whatsapp-business-api/commit/5cdc9ab6129d2d3ded6ad80c67001eea1a6af66c)), closes [#65](https://github.com/carandev/whatsapp-business-api/issues/65)
+
+
+### Bug Fixes
+
+* **templates:** read unmodeled component and button types instead of throwing ([7c7063d](https://github.com/carandev/whatsapp-business-api/commit/7c7063d186920bfc5bbc62a8867e4b33dfe617ab)), closes [#63](https://github.com/carandev/whatsapp-business-api/issues/63)
+
 ## [0.2.1](https://github.com/carandev/whatsapp-business-api/compare/v0.2.0...v0.2.1) (2026-11-05)
 
 
