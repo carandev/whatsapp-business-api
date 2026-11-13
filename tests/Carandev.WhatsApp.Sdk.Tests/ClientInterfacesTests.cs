@@ -16,12 +16,13 @@ public class ClientInterfacesTests
         typeof(IWhatsAppPhoneNumbersClient),
         typeof(IWhatsAppBusinessProfileClient),
         typeof(IWhatsAppWebhooksClient),
+        typeof(IWhatsAppFlowsClient),
     ];
 
     [Fact]
-    public void SevenClientInterfaces_ArePublic()
+    public void EightClientInterfaces_ArePublic()
     {
-        Assert.Equal(7, ExpectedInterfaces.Length);
+        Assert.Equal(8, ExpectedInterfaces.Length);
         Assert.All(ExpectedInterfaces, type =>
         {
             Assert.True(type.IsInterface);

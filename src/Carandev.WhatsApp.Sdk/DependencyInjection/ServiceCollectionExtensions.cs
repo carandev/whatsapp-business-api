@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Binds <see cref="WhatsAppOptions"/> from the <c>WhatsApp</c> configuration section and
-    /// registers <see cref="IWhatsAppClient"/> plus all seven WhatsApp Cloud API resource client
+    /// registers <see cref="IWhatsAppClient"/> plus all eight WhatsApp Cloud API resource client
     /// interfaces.
     /// </summary>
     /// <param name="services">The service collection to add registrations to.</param>
@@ -86,6 +86,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IWhatsAppPhoneNumbersClient, WhatsAppPhoneNumbersClient>();
         services.AddTransient<IWhatsAppBusinessProfileClient, WhatsAppBusinessProfileClient>();
         services.AddTransient<IWhatsAppWebhooksClient, WhatsAppWebhooksClient>();
+        services.AddTransient<IWhatsAppFlowsClient, WhatsAppFlowsClient>();
         services.AddSingleton<IWhatsAppWebhookProcessor, WhatsAppWebhookProcessor>();
 
         return services;

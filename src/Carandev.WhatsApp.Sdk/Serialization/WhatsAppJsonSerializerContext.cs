@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Carandev.WhatsApp.Sdk.Models.BusinessProfile;
+using Carandev.WhatsApp.Sdk.Models.Flows;
 using Carandev.WhatsApp.Sdk.Models.Media;
 using Carandev.WhatsApp.Sdk.Models.Messages;
 using Carandev.WhatsApp.Sdk.Models.Messages.Interactive;
@@ -184,6 +185,19 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(SubscribedAppData))]
 [JsonSerializable(typeof(TemplatesPage<SubscribedApp>))]
 [JsonSerializable(typeof(SubscribeAppRequest))]
+// Flows — management API
+[JsonSerializable(typeof(FlowCategory))]
+[JsonSerializable(typeof(FlowCategory[]))]
+[JsonSerializable(typeof(FlowStatus))]
+[JsonSerializable(typeof(Flow))]
+[JsonSerializable(typeof(TemplatesPage<Flow>))]
+[JsonSerializable(typeof(FlowPreview))]
+[JsonSerializable(typeof(FlowValidationError))]
+[JsonSerializable(typeof(FlowValidationErrorPointer))]
+[JsonSerializable(typeof(CreateFlowRequest))]
+[JsonSerializable(typeof(CreateFlowResponse))]
+[JsonSerializable(typeof(UpdateFlowMetadataRequest))]
+[JsonSerializable(typeof(FlowJsonUploadResponse))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }
