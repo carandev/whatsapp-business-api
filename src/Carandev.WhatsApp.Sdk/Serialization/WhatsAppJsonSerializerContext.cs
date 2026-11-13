@@ -129,6 +129,12 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(CtaUrlAction))]
 [JsonSerializable(typeof(CtaUrlInteractive))]
 [JsonSerializable(typeof(SendCtaUrlMessageRequest))]
+// Interactive messages — WhatsApp Flows
+[JsonSerializable(typeof(FlowMessageParameters))]
+[JsonSerializable(typeof(FlowActionPayload))]
+[JsonSerializable(typeof(FlowActionEnvelope))]
+[JsonSerializable(typeof(FlowInteractive))]
+[JsonSerializable(typeof(SendFlowMessageRequest))]
 // Webhooks — inbound message payload models (PR2 of issue #8)
 [JsonSerializable(typeof(WebhookEnvelope))]
 [JsonSerializable(typeof(WebhookEntry))]

@@ -243,6 +243,7 @@ public class ClientInterfacesTests
                 nameof(IWhatsAppMessagesClient.SendContactsAsync),
                 nameof(IWhatsAppMessagesClient.SendCtaUrlButtonAsync),
                 nameof(IWhatsAppMessagesClient.SendDocumentAsync),
+                nameof(IWhatsAppMessagesClient.SendFlowAsync),
                 nameof(IWhatsAppMessagesClient.SendImageAsync),
                 nameof(IWhatsAppMessagesClient.SendListMessageAsync),
                 nameof(IWhatsAppMessagesClient.SendLocationAsync),

@@ -119,6 +119,29 @@ await messages.SendCtaUrlButtonAsync(to,
     url: "https://example.com/invoices/42");
 ```
 
+### Flow
+
+A Flow message opens a [WhatsApp Flow](../flows/) when the recipient taps its button. Address the Flow by `flowId` or `flowName` (exactly one), and pass a `flowToken` you can match against the reply:
+
+```csharp
+using System.Text.Json;
+using Carandev.WhatsApp.Sdk.Models.Messages.Interactive;
+
+var flow = new FlowMessageParameters(
+    flowCta: "Book now",
+    flowId: "1234567890",
+    flowToken: bookingId,
+    screen: "APPOINTMENT",
+    data: JsonSerializer.SerializeToElement(new { clinic = "Centro" }),
+    mode: FlowMode.Draft); // omit to open the published Flow
+
+await messages.SendFlowAsync(to, "Book your next visit.", flow,
+    headerText: "Appointments",
+    footerText: "Takes one minute");
+```
+
+`FlowAction.Navigate` (the default) opens `screen` with `data`; both are optional, and `data` must be a non-empty JSON object. `FlowAction.DataExchange` asks your [Flow endpoint](../flows/#data-endpoint) for the first screen instead, so it rejects `screen` and `data`. Invalid combinations throw `ArgumentException` before any request is sent.
+
 ## Handling the result
 
 ```csharp
