@@ -77,7 +77,7 @@ using System.Text.Json.Nodes;
 using Carandev.WhatsApp.Sdk;
 using Carandev.WhatsApp.Sdk.Flows;
 
-// Reuse one instance; it is thread safe.
+// Reuse one instance for concurrent requests; dispose it only on shutdown.
 var crypto = FlowEndpointCrypto.FromPem(
     builder.Configuration["Flows:PrivateKeyPem"]!,
     builder.Configuration["Flows:PrivateKeyPassphrase"]);

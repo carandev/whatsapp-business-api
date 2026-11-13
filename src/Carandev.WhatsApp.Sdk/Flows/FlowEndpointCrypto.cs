@@ -24,7 +24,8 @@ namespace Carandev.WhatsApp.Sdk.Flows;
 /// When decryption fails, respond with HTTP 421 (<see cref="FlowEndpointDecryptionException.StatusCode"/>)
 /// so the client refreshes your public key and retries. Validate the <c>X-Hub-Signature-256</c>
 /// header first with <see cref="WhatsAppSignatureValidator"/>, and respond 432 when it does not
-/// match. Instances are thread safe and meant to be reused.
+/// match. Reuse one instance: it supports concurrent <see cref="DecryptRequest"/> calls, but do
+/// not dispose it while requests are in flight.
 /// </para>
 /// </remarks>
 public sealed class FlowEndpointCrypto : IDisposable
