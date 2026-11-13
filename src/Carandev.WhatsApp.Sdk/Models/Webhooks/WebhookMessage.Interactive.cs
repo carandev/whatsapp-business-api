@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Carandev.WhatsApp.Sdk.Models.Messages;
 using Carandev.WhatsApp.Sdk.Serialization;
 
@@ -54,8 +55,9 @@ public sealed record WebhookButtonPayload
 /// <summary>
 /// A reply to an interactive reply-buttons or list message (<c>type: "interactive"</c>). The
 /// nested <see cref="WebhookInteractiveReply"/> further discriminates on
-/// <c>interactive.type</c> into <see cref="WebhookButtonReply"/> (<c>button_reply</c>) or
-/// <see cref="WebhookListReply"/> (<c>list_reply</c>).
+/// <c>interactive.type</c> into <see cref="WebhookButtonReply"/> (<c>button_reply</c>),
+/// <see cref="WebhookListReply"/> (<c>list_reply</c>), or <see cref="WebhookFlowReply"/>
+/// (<c>nfm_reply</c>).
 /// </summary>
 public sealed record InteractiveWebhookMessage : WebhookMessage
 {
@@ -69,7 +71,8 @@ public sealed record InteractiveWebhookMessage : WebhookMessage
 /// <summary>
 /// Base type for the <c>interactive</c> object of an <see cref="InteractiveWebhookMessage"/>,
 /// discriminated on the wire by the nested <c>type</c> property, dispatched by
-/// <see cref="WebhookInteractiveReplyConverter"/> (not the built-in <c>[JsonPolymorphic]</c>
+/// <see cref="WebhookInteractiveReplyConverter"/> into <see cref="WebhookButtonReply"/>,
+/// <see cref="WebhookListReply"/>, or <see cref="WebhookFlowReply"/> (not the built-in <c>[JsonPolymorphic]</c>
 /// mechanism — see the remarks on <see cref="WebhookMessage"/> for why).
 /// </summary>
 [JsonConverter(typeof(WebhookInteractiveReplyConverter))]
@@ -99,6 +102,108 @@ public sealed record WebhookListReply : WebhookInteractiveReply
     /// </summary>
     [JsonPropertyName("list_reply")]
     public WebhookInteractiveReplyDetail ListReply { get; init; } = default!;
+}
+
+/// <summary>
+/// A WhatsApp Flow's reply (<c>interactive.type: "nfm_reply"</c>), sent when the recipient
+/// completes a Flow opened from a Flow message.
+/// </summary>
+public sealed record WebhookFlowReply : WebhookInteractiveReply
+{
+    /// <summary>
+    /// The nested reply kind. Always <c>nfm_reply</c>.
+    /// </summary>
+    [JsonPropertyName("type")]
+    public string Type => "nfm_reply";
+
+    /// <summary>
+    /// The Flow's name, body, and answers.
+    /// </summary>
+    [JsonPropertyName("nfm_reply")]
+    public WebhookFlowReplyContent NfmReply { get; init; } = default!;
+}
+
+/// <summary>
+/// The content of a <see cref="WebhookFlowReply"/>. Meta sends the Flow's answers as a JSON
+/// string in <see cref="ResponseJson"/>; its shape is whatever the Flow's terminal screen (or your
+/// endpoint's final response) put in it, always including <c>flow_token</c>. The Flow id is not
+/// included, so correlate replies through <see cref="FlowToken"/> or a field of your own.
+/// </summary>
+public sealed record WebhookFlowReplyContent
+{
+    /// <summary>
+    /// The reply name. <c>flow</c> for Flow replies.
+    /// </summary>
+    [JsonPropertyName("name")]
+    public string? Name { get; init; }
+
+    /// <summary>
+    /// The text shown in the chat for the reply, e.g. <c>Sent</c>.
+    /// </summary>
+    [JsonPropertyName("body")]
+    public string? Body { get; init; }
+
+    /// <summary>
+    /// The Flow's answers, as the raw JSON string Meta sent.
+    /// </summary>
+    [JsonPropertyName("response_json")]
+    public string ResponseJson { get; init; } = default!;
+
+    /// <summary>
+    /// The <c>flow_token</c> from <see cref="ResponseJson"/>, or <see langword="null"/> when the
+    /// JSON is malformed, is not an object, or has no string <c>flow_token</c>. Never throws.
+    /// </summary>
+    [JsonIgnore]
+    public string? FlowToken
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(ResponseJson))
+            {
+                return null;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(ResponseJson);
+                return document.RootElement.ValueKind == JsonValueKind.Object
+                    && document.RootElement.TryGetProperty("flow_token", out var token)
+                    && token.ValueKind == JsonValueKind.String
+                    ? token.GetString()
+                    : null;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Parses <see cref="ResponseJson"/> into a detached <see cref="JsonElement"/>.
+    /// </summary>
+    /// <returns>The parsed answers.</returns>
+    /// <exception cref="JsonException"><see cref="ResponseJson"/> is not valid JSON.</exception>
+    public JsonElement GetResponse()
+    {
+        using var document = JsonDocument.Parse(ResponseJson);
+        return document.RootElement.Clone();
+    }
+
+    /// <summary>
+    /// Deserializes <see cref="ResponseJson"/> into <typeparamref name="T"/> through
+    /// <paramref name="typeInfo"/>, typically from your own source-generated
+    /// <see cref="JsonSerializerContext"/>, so it stays trimming/AOT friendly.
+    /// </summary>
+    /// <typeparam name="T">The type that models your Flow's answers.</typeparam>
+    /// <param name="typeInfo">The metadata used to deserialize <typeparamref name="T"/>.</param>
+    /// <returns>The deserialized answers, or <see langword="null"/> for a JSON <c>null</c>.</returns>
+    /// <exception cref="JsonException"><see cref="ResponseJson"/> is not valid JSON for <typeparamref name="T"/>.</exception>
+    public T? GetResponse<T>(JsonTypeInfo<T> typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        return JsonSerializer.Deserialize(ResponseJson, typeInfo);
+    }
 }
 
 /// <summary>
@@ -209,7 +314,8 @@ public sealed record WebhookSystemContent
 
 /// <summary>
 /// Dispatches <see cref="WebhookInteractiveReply"/> deserialization to
-/// <see cref="WebhookButtonReply"/> or <see cref="WebhookListReply"/> based on the raw nested
+/// <see cref="WebhookButtonReply"/>, <see cref="WebhookListReply"/>, or
+/// <see cref="WebhookFlowReply"/> based on the raw nested
 /// <c>type</c> property, regardless of property order. Falls back to a bare
 /// <see cref="WebhookInteractiveReply"/> for an unrecognized nested type, never throwing.
 /// </summary>
@@ -227,6 +333,7 @@ public sealed class WebhookInteractiveReplyConverter : JsonConverter<WebhookInte
         {
             "button_reply" => JsonSerializer.Deserialize(root, context.WebhookButtonReply)!,
             "list_reply" => JsonSerializer.Deserialize(root, context.WebhookListReply)!,
+            "nfm_reply" => JsonSerializer.Deserialize(root, context.WebhookFlowReply)!,
             _ => new WebhookInteractiveReply(),
         };
     }
@@ -246,6 +353,9 @@ public sealed class WebhookInteractiveReplyConverter : JsonConverter<WebhookInte
                 return;
             case WebhookListReply listReply:
                 JsonSerializer.Serialize(writer, listReply, context.WebhookListReply);
+                return;
+            case WebhookFlowReply flowReply:
+                JsonSerializer.Serialize(writer, flowReply, context.WebhookFlowReply);
                 return;
             default:
                 writer.WriteStartObject();

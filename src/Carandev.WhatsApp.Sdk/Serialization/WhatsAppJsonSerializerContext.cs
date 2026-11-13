@@ -163,6 +163,8 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(WebhookButtonReply))]
 [JsonSerializable(typeof(WebhookListReply))]
 [JsonSerializable(typeof(WebhookInteractiveReplyDetail))]
+[JsonSerializable(typeof(WebhookFlowReply))]
+[JsonSerializable(typeof(WebhookFlowReplyContent))]
 [JsonSerializable(typeof(ReactionWebhookMessage))]
 [JsonSerializable(typeof(WebhookReaction))]
 [JsonSerializable(typeof(RequestWelcomeWebhookMessage))]

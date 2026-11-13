@@ -1,0 +1,18 @@
+{
+  "context": {
+    "from": "16315558151",
+    "id": "gBGGEiRVVgBPAgm7FUgc73noXjo"
+  },
+  "from": "16315551234",
+  "id": "wamid.ID_INTERACTIVE_NFM",
+  "timestamp": "1603059221",
+  "type": "interactive",
+  "interactive": {
+    "type": "nfm_reply",
+    "nfm_reply": {
+      "name": "flow",
+      "body": "Sent",
+      "response_json": "{\"flow_token\": \"booking-42\", \"date\": \"2026-11-20\", \"guests\": 2}"
+    }
+  }
+}
