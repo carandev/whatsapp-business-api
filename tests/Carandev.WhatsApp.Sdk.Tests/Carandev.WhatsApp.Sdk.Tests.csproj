@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <None Include="Webhooks\TestData\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Flows\TestData\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

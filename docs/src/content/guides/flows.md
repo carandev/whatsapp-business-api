@@ -67,3 +67,76 @@ await flows.DeleteFlowAsync(draftFlowId);        // drafts only
 ```
 
 Every method returns a `Result`; Meta's errors (for example `139001`, updating a published Flow) arrive in `result.Error`. A blank Flow id or an empty update throws `ArgumentException` before any request is sent.
+
+## Data endpoint
+
+A Flow with an endpoint asks your server for screen data (`data_exchange`) instead of shipping it all in the Flow JSON. Every request is encrypted for your RSA key pair; [Meta's endpoint guide](https://developers.facebook.com/docs/whatsapp/flows/guides/implementingyourflowendpoint) covers generating the keys and uploading the public key for the phone number. `FlowEndpointCrypto` handles the protocol, and like the webhook processor it never touches HTTP: it takes the raw body string and gives back the response body string.
+
+```csharp
+using System.Text.Json.Nodes;
+using Carandev.WhatsApp.Sdk;
+using Carandev.WhatsApp.Sdk.Flows;
+
+// Reuse one instance; it is thread safe.
+var crypto = FlowEndpointCrypto.FromPem(
+    builder.Configuration["Flows:PrivateKeyPem"]!,
+    builder.Configuration["Flows:PrivateKeyPassphrase"]);
+var signature = new WhatsAppSignatureValidator(builder.Configuration["WhatsApp:AppSecret"]);
+
+app.MapPost("/flows/booking", async (HttpRequest request) =>
+{
+    using var reader = new StreamReader(request.Body);
+    var rawBody = await reader.ReadToEndAsync();
+
+    if (!signature.Verify(rawBody, request.Headers["X-Hub-Signature-256"]))
+    {
+        return Results.StatusCode(FlowEndpointStatusCodes.SignatureInvalid); // 432
+    }
+
+    FlowEndpointRequest flow;
+    try
+    {
+        flow = crypto.DecryptRequest(rawBody);
+    }
+    catch (FlowEndpointDecryptionException ex)
+    {
+        return Results.StatusCode(ex.StatusCode); // 421: the client refreshes the key and retries
+    }
+
+    if (flow.IsHealthCheck)
+    {
+        return Results.Text(flow.EncryptHealthCheckResponse());
+    }
+
+    if (flow.IsErrorNotification)
+    {
+        return Results.Text(flow.EncryptErrorAcknowledgement());
+    }
+
+    var next = flow.Action == FlowEndpointActions.Init
+        ? new JsonObject
+        {
+            ["screen"] = "APPOINTMENT",
+            ["data"] = new JsonObject { ["slots"] = new JsonArray("10:00", "11:00") },
+        }
+        : new JsonObject
+        {
+            ["screen"] = "SUCCESS",
+            ["data"] = new JsonObject
+            {
+                ["extension_message_response"] = new JsonObject
+                {
+                    ["params"] = new JsonObject { ["flow_token"] = flow.FlowToken },
+                },
+            },
+        };
+
+    return Results.Text(flow.EncryptResponse(next.ToJsonString()));
+});
+```
+
+`FlowEndpointRequest` exposes `Action` (`INIT`, `BACK`, `data_exchange`, `ping`; see `FlowEndpointActions`), `Screen`, `Data` as a `JsonElement`, `FlowToken`, and the raw `DecryptedJson`. `EncryptResponse<T>(value, typeInfo)` serializes through your own source-generated context. Responding with the `SUCCESS` screen and `extension_message_response.params` closes the Flow; those params, including the required `flow_token`, arrive later as the [`nfm_reply` webhook](../webhooks/#flow-replies). To reject an expired token, return `FlowEndpointStatusCodes.FlowTokenExpired` (427) with an encrypted `{"error_msg":"..."}`.
+
+`FromPem` reads unencrypted PKCS#8 or PKCS#1 keys and, with a passphrase, encrypted PKCS#8 keys. Keys encrypted the legacy OpenSSL way (`Proc-Type: 4,ENCRYPTED`, which Meta's sample script produces) are not readable by .NET; convert them once with `openssl pkcs8 -topk8 -in private.pem -out private-pkcs8.pem`. You can also pass your own `RSA` instance (for example from a key vault) to the constructor.
+
+AES-GCM uses a 16-byte IV here, which .NET's `AesGcm` does not accept, so the SDK builds GCM on the platform AES cipher and checks it against vectors produced by OpenSSL through Node.js, including Meta's own encryption sample.
