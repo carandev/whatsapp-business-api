@@ -36,6 +36,33 @@ public interface IWhatsAppWebhookProcessor
     bool IsValidSignature(string rawBody, string? signatureHeader);
 
     /// <summary>
+    /// Handles Meta's subscription verification request against an explicit
+    /// <paramref name="expectedVerifyToken"/> instead of <see cref="WhatsAppOptions.WebhookVerifyToken"/>,
+    /// for an endpoint that serves several Meta apps.
+    /// </summary>
+    /// <param name="verifyToken">The <c>hub.verify_token</c> query value.</param>
+    /// <param name="challenge">The <c>hub.challenge</c> query value.</param>
+    /// <param name="expectedVerifyToken">The verify token configured for the app being verified.</param>
+    /// <returns>The challenge to echo back when the tokens match; otherwise <see langword="null"/>.</returns>
+    /// <exception cref="ArgumentException"><paramref name="expectedVerifyToken"/> is null or empty.</exception>
+    string? VerifySubscription(string? verifyToken, string? challenge, string expectedVerifyToken) =>
+        WebhookCredentialChecks.VerifySubscription(verifyToken, challenge, expectedVerifyToken);
+
+    /// <summary>
+    /// Checks the <c>X-Hub-Signature-256</c> header against the raw body using an explicit
+    /// <paramref name="appSecret"/> instead of <see cref="WhatsAppOptions.AppSecret"/>, for an
+    /// endpoint that serves several Meta apps. Pair it with
+    /// <see cref="DispatchAsync"/> to process the body once verified.
+    /// </summary>
+    /// <param name="rawBody">The raw, unmodified request body.</param>
+    /// <param name="signatureHeader">The <c>X-Hub-Signature-256</c> header value.</param>
+    /// <param name="appSecret">The secret of the Meta app that sent the webhook.</param>
+    /// <returns><see langword="true"/> when the signature is valid.</returns>
+    /// <exception cref="ArgumentException"><paramref name="appSecret"/> is null or empty.</exception>
+    bool IsValidSignature(string rawBody, string? signatureHeader, string appSecret) =>
+        WebhookCredentialChecks.IsValidSignature(rawBody, signatureHeader, appSecret);
+
+    /// <summary>
     /// Parses an already-verified webhook body and dispatches each message and status item to
     /// <paramref name="handlers"/>. Use it to process a body that was verified and queued earlier.
     /// </summary>

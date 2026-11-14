@@ -42,6 +42,14 @@ public sealed class WhatsAppWebhookProcessor : IWhatsAppWebhookProcessor
     }
 
     /// <inheritdoc />
+    public string? VerifySubscription(string? verifyToken, string? challenge, string expectedVerifyToken) =>
+        WebhookCredentialChecks.VerifySubscription(verifyToken, challenge, expectedVerifyToken);
+
+    /// <inheritdoc />
+    public bool IsValidSignature(string rawBody, string? signatureHeader, string appSecret) =>
+        WebhookCredentialChecks.IsValidSignature(rawBody, signatureHeader, appSecret);
+
+    /// <inheritdoc />
     public async Task<WebhookProcessingResult> ProcessAsync(string rawBody, string? signatureHeader, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(rawBody);

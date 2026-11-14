@@ -259,4 +259,76 @@ public class WhatsAppWebhookProcessorTests
         Assert.Equal(2, handlers.Messages.Count);
         Assert.Single(handlers.Statuses);
     }
+
+    [Fact]
+    public void IsValidSignature_WithExplicitAppSecret_UsesThatSecretInsteadOfOptions()
+    {
+        var processor = CreateProcessor(appSecret: AppSecret);
+        const string body = "{\"object\":\"whatsapp_business_account\"}";
+
+        Assert.True(processor.IsValidSignature(body, Sign("other-app-secret", body), "other-app-secret"));
+        Assert.False(processor.IsValidSignature(body, Sign(AppSecret, body), "other-app-secret"));
+    }
+
+    [Fact]
+    public void IsValidSignature_WithExplicitAppSecret_WorksWithoutConfiguredSecret()
+    {
+        var processor = CreateProcessor(appSecret: null);
+        const string body = "{}";
+
+        Assert.True(processor.IsValidSignature(body, Sign("tenant-secret", body), "tenant-secret"));
+        Assert.False(processor.IsValidSignature(body, null, "tenant-secret"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void IsValidSignature_WithExplicitAppSecret_Throws_ForMissingSecret(string? appSecret)
+    {
+        var processor = CreateProcessor();
+
+        Assert.ThrowsAny<ArgumentException>(() => processor.IsValidSignature("{}", Sign(AppSecret, "{}"), appSecret!));
+    }
+
+    [Fact]
+    public void VerifySubscription_WithExpectedToken_ComparesAgainstThatToken()
+    {
+        var processor = CreateProcessor(verifyToken: VerifyToken);
+
+        Assert.Equal("challenge-value", processor.VerifySubscription("tenant-token", "challenge-value", "tenant-token"));
+        Assert.Null(processor.VerifySubscription(VerifyToken, "challenge-value", "tenant-token"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void VerifySubscription_WithExpectedToken_Throws_ForMissingExpectedToken(string? expected)
+    {
+        var processor = CreateProcessor();
+
+        Assert.ThrowsAny<ArgumentException>(() => processor.VerifySubscription(VerifyToken, "challenge-value", expected!));
+    }
+
+    [Fact]
+    public void ExplicitOverloads_HaveDefaultInterfaceImplementations()
+    {
+        IWhatsAppWebhookProcessor processor = new MinimalProcessor();
+        const string body = "{}";
+
+        Assert.True(processor.IsValidSignature(body, Sign("tenant-secret", body), "tenant-secret"));
+        Assert.Equal("c", processor.VerifySubscription("t", "c", "t"));
+    }
+
+    private sealed class MinimalProcessor : IWhatsAppWebhookProcessor
+    {
+        public string? VerifySubscription(string? verifyToken, string? challenge) => throw new NotSupportedException();
+
+        public bool IsValidSignature(string rawBody, string? signatureHeader) => throw new NotSupportedException();
+
+        public Task<WebhookProcessingResult> DispatchAsync(string rawBody, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<WebhookProcessingResult> ProcessAsync(string rawBody, string? signatureHeader, WhatsAppWebhookHandlers handlers, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+    }
 }
