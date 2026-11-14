@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/carandev/whatsapp-business-api/compare/v0.3.0...v0.4.0) (2026-11-14)
+
+
+### Features
+
+* **flows:** decrypt and encrypt Flow data endpoint payloads ([5910b7b](https://github.com/carandev/whatsapp-business-api/commit/5910b7b2019effce168532de9778e5f878d35263))
+* **flows:** manage WhatsApp Flows through the Graph API ([7f7faa2](https://github.com/carandev/whatsapp-business-api/commit/7f7faa296ed41cc1293925e85b794b5110999a1d))
+* **messages:** send interactive Flow messages ([cd8f344](https://github.com/carandev/whatsapp-business-api/commit/cd8f34454d39ff2d7626df636ce80a44ae974e01))
+* **webhooks:** parse WhatsApp Flow replies (nfm_reply) ([3131e5f](https://github.com/carandev/whatsapp-business-api/commit/3131e5f2348aceba6f693c14e7566830758d9217))
+* WhatsApp Flows support ([2b6ca45](https://github.com/carandev/whatsapp-business-api/commit/2b6ca45552208cd92536067df80628ed226b3033))
+
 ## [0.3.0](https://github.com/carandev/whatsapp-business-api/compare/v0.2.1...v0.3.0) (2026-11-09)
 
 
