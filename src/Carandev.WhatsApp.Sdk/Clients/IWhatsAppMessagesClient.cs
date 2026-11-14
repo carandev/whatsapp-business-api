@@ -296,4 +296,37 @@ public interface IWhatsAppMessagesClient
     /// request is sent.
     /// </exception>
     Task<Result<MessageResponse>> SendCtaUrlButtonAsync(string to, string bodyText, string displayText, string url, InteractiveHeader? header = null, string? footerText = null, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sends an interactive Flow message via <c>POST /{phone_number_id}/messages</c>. The
+    /// recipient taps the call-to-action button to open the Flow; their answers arrive later as a
+    /// <c>nfm_reply</c> interactive webhook message (<c>WebhookFlowReply</c>).
+    /// </summary>
+    /// <param name="to">The recipient's phone number, in E.164 format.</param>
+    /// <param name="bodyText">The message body text.</param>
+    /// <param name="flow">The Flow to open (by id or name), its call-to-action text, and how it opens.</param>
+    /// <param name="headerText">Optional header text.</param>
+    /// <param name="footerText">Optional footer text.</param>
+    /// <param name="context">An optional reference to a prior inbound message being replied to.</param>
+    /// <param name="phoneNumberIdOverride">
+    /// An optional phone number id that takes precedence over
+    /// <see cref="WhatsAppOptions.PhoneNumberId"/> when resolving the sending identity.
+    /// </param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> wrapping the sent <see cref="MessageResponse"/> on
+    /// success; a failed <see cref="Result{T}"/> when the Graph API call fails.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="flow"/> is null. No request is sent.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="bodyText"/> is null, empty, or whitespace. No request is sent.
+    /// </exception>
+    /// <remarks>
+    /// This member has a default implementation that throws <see cref="NotSupportedException"/>, so
+    /// third-party implementations written before it existed keep compiling;
+    /// <see cref="WhatsAppMessagesClient"/> implements it.
+    /// </remarks>
+    Task<Result<MessageResponse>> SendFlowAsync(string to, string bodyText, FlowMessageParameters flow, string? headerText = null, string? footerText = null, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+        throw new NotSupportedException(
+            $"{GetType().FullName} does not implement {nameof(SendFlowAsync)}. Use WhatsAppMessagesClient or implement the member.");
 }

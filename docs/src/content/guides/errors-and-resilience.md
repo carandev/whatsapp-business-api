@@ -1,7 +1,7 @@
 ---
 title: Errors and retries
 description: "Result<T> versus WhatsAppException, the retry policy, and logging."
-order: 8
+order: 9
 ---
 
 The SDK separates **rejected requests** from **unavailable service** on purpose.

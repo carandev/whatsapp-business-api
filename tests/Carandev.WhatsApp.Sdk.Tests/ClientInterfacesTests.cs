@@ -16,12 +16,13 @@ public class ClientInterfacesTests
         typeof(IWhatsAppPhoneNumbersClient),
         typeof(IWhatsAppBusinessProfileClient),
         typeof(IWhatsAppWebhooksClient),
+        typeof(IWhatsAppFlowsClient),
     ];
 
     [Fact]
-    public void SevenClientInterfaces_ArePublic()
+    public void EightClientInterfaces_ArePublic()
     {
-        Assert.Equal(7, ExpectedInterfaces.Length);
+        Assert.Equal(8, ExpectedInterfaces.Length);
         Assert.All(ExpectedInterfaces, type =>
         {
             Assert.True(type.IsInterface);
@@ -243,6 +244,7 @@ public class ClientInterfacesTests
                 nameof(IWhatsAppMessagesClient.SendContactsAsync),
                 nameof(IWhatsAppMessagesClient.SendCtaUrlButtonAsync),
                 nameof(IWhatsAppMessagesClient.SendDocumentAsync),
+                nameof(IWhatsAppMessagesClient.SendFlowAsync),
                 nameof(IWhatsAppMessagesClient.SendImageAsync),
                 nameof(IWhatsAppMessagesClient.SendListMessageAsync),
                 nameof(IWhatsAppMessagesClient.SendLocationAsync),

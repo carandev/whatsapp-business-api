@@ -194,6 +194,21 @@ sealed class SupportHandlers : WhatsAppWebhookHandlers
 
 Media messages carry an ID; download the file with [`IWhatsAppMediaClient`](../media/#download-inbound-media).
 
+### Flow replies
+
+When someone completes a [Flow](../flows/), Meta sends an `interactive` message whose nested type is `nfm_reply`. It parses to `WebhookFlowReply`; the answers arrive as a JSON string in `NfmReply.ResponseJson`. The reply does not include the Flow id, so correlate it through the `flow_token` you sent:
+
+```csharp
+if (message is InteractiveWebhookMessage { Interactive: WebhookFlowReply flow })
+{
+    var token = flow.NfmReply.FlowToken;                 // null if missing or malformed
+    var answers = flow.NfmReply.GetResponse();           // JsonElement
+    var booking = flow.NfmReply.GetResponse(MyJsonContext.Default.BookingAnswers);
+}
+```
+
+`GetResponse<T>` takes a `JsonTypeInfo<T>` from your own source-generated `JsonSerializerContext`, so it stays trimming friendly. Both `GetResponse` overloads throw `JsonException` for malformed JSON; `FlowToken` never throws.
+
 ## Without dependency injection
 
 ```csharp

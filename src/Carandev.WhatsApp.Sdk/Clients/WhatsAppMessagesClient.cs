@@ -109,6 +109,13 @@ public sealed class WhatsAppMessagesClient : IWhatsAppMessagesClient
         return SendAsync(request, WhatsAppJsonSerializerContext.Default.SendCtaUrlMessageRequest, phoneNumberIdOverride, ct);
     }
 
+    /// <inheritdoc />
+    public Task<Result<MessageResponse>> SendFlowAsync(string to, string bodyText, FlowMessageParameters flow, string? headerText = null, string? footerText = null, Context? context = null, string? phoneNumberIdOverride = null, CancellationToken ct = default)
+    {
+        var request = new SendFlowMessageRequest(to, bodyText, flow, headerText, footerText, context);
+        return SendAsync(request, WhatsAppJsonSerializerContext.Default.SendFlowMessageRequest, phoneNumberIdOverride, ct);
+    }
+
     private async Task<Result<MessageResponse>> SendAsync<TRequest>(TRequest request, JsonTypeInfo<TRequest> typeInfo, string? phoneNumberIdOverride, CancellationToken ct)
     {
         var httpRequest = _client.CreateRequest(HttpMethod.Post, MessagesPathTemplate, phoneNumberIdOverride);

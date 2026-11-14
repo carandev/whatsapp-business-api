@@ -14,4 +14,8 @@
     <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.12" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Carandev.WhatsApp.Sdk.Tests" />
+  </ItemGroup>
+
 </Project>

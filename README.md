@@ -73,7 +73,7 @@ builder.Services.AddWhatsAppCloudApi(builder.Configuration);
 using var host = builder.Build();
 ```
 
-`AddWhatsAppCloudApi` binds `WhatsAppOptions` from configuration and registers `IWhatsAppClient` plus every resource client: `IWhatsAppMessagesClient`, `IWhatsAppMediaClient`, `IWhatsAppTemplatesClient`, `IWhatsAppPhoneNumbersClient`, `IWhatsAppBusinessProfileClient`, and `IWhatsAppWebhooksClient`. It also wires a retry/resilience pipeline that automatically retries transient failures (5xx responses, rate limits, recognized transient Graph error codes) with exponential backoff + jitter, honoring `Retry-After` when present, up to `WhatsAppOptions.MaxRetries` attempts.
+`AddWhatsAppCloudApi` binds `WhatsAppOptions` from configuration and registers `IWhatsAppClient` plus every resource client: `IWhatsAppMessagesClient`, `IWhatsAppMediaClient`, `IWhatsAppTemplatesClient`, `IWhatsAppPhoneNumbersClient`, `IWhatsAppBusinessProfileClient`, `IWhatsAppWebhooksClient`, and `IWhatsAppFlowsClient`. It also wires a retry/resilience pipeline that automatically retries transient failures (5xx responses, rate limits, recognized transient Graph error codes) with exponential backoff + jitter, honoring `Retry-After` when present, up to `WhatsAppOptions.MaxRetries` attempts.
 
 ### Sending a text message
 
@@ -201,6 +201,7 @@ See the [webhook setup guide](https://developers.facebook.com/docs/whatsapp/clou
 - [Message templates](https://developers.facebook.com/docs/whatsapp/business-management-api/guides/create-message-templates)
 - [Media](https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media)
 - [Webhooks setup](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks)
+- [WhatsApp Flows](https://developers.facebook.com/docs/whatsapp/flows)
 - [Error codes reference](https://developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes)
 
 ## Documentation

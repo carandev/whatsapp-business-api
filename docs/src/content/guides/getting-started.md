@@ -64,6 +64,7 @@ using var host = builder.Build();
 | `IWhatsAppTemplatesClient` | Create, list, update, and delete message templates. |
 | `IWhatsAppPhoneNumbersClient` | Read phone numbers and run code verification. |
 | `IWhatsAppBusinessProfileClient` | Read and update the business profile. |
+| `IWhatsAppFlowsClient` | Create, upload, publish, and retire WhatsApp Flows. |
 | `IWhatsAppWebhookProcessor` | Verify and dispatch inbound webhooks. |
 | `IWhatsAppClient` | Low-level typed HTTP client used by the resource clients. |
 

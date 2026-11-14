@@ -82,6 +82,7 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(provider.GetRequiredService<IWhatsAppPhoneNumbersClient>());
         Assert.NotNull(provider.GetRequiredService<IWhatsAppBusinessProfileClient>());
         Assert.NotNull(provider.GetRequiredService<IWhatsAppWebhooksClient>());
+        Assert.NotNull(provider.GetRequiredService<IWhatsAppFlowsClient>());
     }
 
     [Fact]

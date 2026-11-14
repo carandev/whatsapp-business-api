@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Carandev.WhatsApp.Sdk.Models.BusinessProfile;
+using Carandev.WhatsApp.Sdk.Models.Flows;
 using Carandev.WhatsApp.Sdk.Models.Media;
 using Carandev.WhatsApp.Sdk.Models.Messages;
 using Carandev.WhatsApp.Sdk.Models.Messages.Interactive;
@@ -129,6 +130,12 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(CtaUrlAction))]
 [JsonSerializable(typeof(CtaUrlInteractive))]
 [JsonSerializable(typeof(SendCtaUrlMessageRequest))]
+// Interactive messages — WhatsApp Flows
+[JsonSerializable(typeof(FlowMessageParameters))]
+[JsonSerializable(typeof(FlowActionPayload))]
+[JsonSerializable(typeof(FlowActionEnvelope))]
+[JsonSerializable(typeof(FlowInteractive))]
+[JsonSerializable(typeof(SendFlowMessageRequest))]
 // Webhooks — inbound message payload models (PR2 of issue #8)
 [JsonSerializable(typeof(WebhookEnvelope))]
 [JsonSerializable(typeof(WebhookEntry))]
@@ -157,6 +164,8 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(WebhookButtonReply))]
 [JsonSerializable(typeof(WebhookListReply))]
 [JsonSerializable(typeof(WebhookInteractiveReplyDetail))]
+[JsonSerializable(typeof(WebhookFlowReply))]
+[JsonSerializable(typeof(WebhookFlowReplyContent))]
 [JsonSerializable(typeof(ReactionWebhookMessage))]
 [JsonSerializable(typeof(WebhookReaction))]
 [JsonSerializable(typeof(RequestWelcomeWebhookMessage))]
@@ -176,6 +185,19 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(SubscribedAppData))]
 [JsonSerializable(typeof(TemplatesPage<SubscribedApp>))]
 [JsonSerializable(typeof(SubscribeAppRequest))]
+// Flows — management API
+[JsonSerializable(typeof(FlowCategory))]
+[JsonSerializable(typeof(FlowCategory[]))]
+[JsonSerializable(typeof(FlowStatus))]
+[JsonSerializable(typeof(Flow))]
+[JsonSerializable(typeof(TemplatesPage<Flow>))]
+[JsonSerializable(typeof(FlowPreview))]
+[JsonSerializable(typeof(FlowValidationError))]
+[JsonSerializable(typeof(FlowValidationErrorPointer))]
+[JsonSerializable(typeof(CreateFlowRequest))]
+[JsonSerializable(typeof(CreateFlowResponse))]
+[JsonSerializable(typeof(UpdateFlowMetadataRequest))]
+[JsonSerializable(typeof(FlowJsonUploadResponse))]
 public partial class WhatsAppJsonSerializerContext : JsonSerializerContext
 {
 }
