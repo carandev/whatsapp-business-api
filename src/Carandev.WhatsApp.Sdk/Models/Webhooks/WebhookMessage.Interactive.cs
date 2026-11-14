@@ -86,6 +86,12 @@ public record WebhookInteractiveReply
 public sealed record WebhookButtonReply : WebhookInteractiveReply
 {
     /// <summary>
+    /// The nested reply kind. Always <c>button_reply</c>.
+    /// </summary>
+    [JsonPropertyName("type")]
+    public string Type => "button_reply";
+
+    /// <summary>
     /// The tapped button's id and title.
     /// </summary>
     [JsonPropertyName("button_reply")]
@@ -97,6 +103,12 @@ public sealed record WebhookButtonReply : WebhookInteractiveReply
 /// </summary>
 public sealed record WebhookListReply : WebhookInteractiveReply
 {
+    /// <summary>
+    /// The nested reply kind. Always <c>list_reply</c>.
+    /// </summary>
+    [JsonPropertyName("type")]
+    public string Type => "list_reply";
+
     /// <summary>
     /// The selected row's id, title, and optional description.
     /// </summary>

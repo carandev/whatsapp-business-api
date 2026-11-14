@@ -49,6 +49,16 @@ public record WebhookMessage
     public WebhookMessageContext? Context { get; init; }
 
     /// <summary>
+    /// The raw Meta <c>type</c> discriminator this message was read with (e.g. <c>"image"</c>, or
+    /// <c>"order"</c> for an unrecognized kind), set by <see cref="WebhookMessageConverter"/>.
+    /// <see langword="null"/> on a message constructed in code. When writing, the converter
+    /// emits the concrete type's own discriminator, and falls back to this value only for a
+    /// bare <see cref="WebhookMessage"/>, so an unrecognized kind round-trips unchanged.
+    /// </summary>
+    [JsonIgnore]
+    public string? Type { get; init; }
+
+    /// <summary>
     /// Captures the raw kind-specific fields (e.g. <c>"order"</c>) that this concrete base type
     /// does not model, populated by <see cref="WebhookMessageConverter"/> only when an
     /// unrecognized <c>type</c> falls back to this base type — so an unrecognized kind never
@@ -285,7 +295,7 @@ public sealed class WebhookMessageConverter : JsonConverter<WebhookMessage>
         var type = root.TryGetProperty("type", out var typeProperty) ? typeProperty.GetString() : null;
         var context = WhatsAppJsonSerializerContext.Default;
 
-        return type switch
+        WebhookMessage message = type switch
         {
             "text" => JsonSerializer.Deserialize(root, context.TextWebhookMessage)!,
             "image" => JsonSerializer.Deserialize(root, context.ImageWebhookMessage)!,
@@ -302,6 +312,8 @@ public sealed class WebhookMessageConverter : JsonConverter<WebhookMessage>
             "system" => JsonSerializer.Deserialize(root, context.SystemWebhookMessage)!,
             _ => ReadUnknown(root, context),
         };
+
+        return message with { Type = type };
     }
 
     /// <inheritdoc />
@@ -312,51 +324,54 @@ public sealed class WebhookMessageConverter : JsonConverter<WebhookMessage>
 
         var context = WhatsAppJsonSerializerContext.Default;
 
-        switch (value)
+        var (typeName, element) = value switch
         {
-            case TextWebhookMessage text:
-                JsonSerializer.Serialize(writer, text, context.TextWebhookMessage);
-                return;
-            case ImageWebhookMessage image:
-                JsonSerializer.Serialize(writer, image, context.ImageWebhookMessage);
-                return;
-            case DocumentWebhookMessage document:
-                JsonSerializer.Serialize(writer, document, context.DocumentWebhookMessage);
-                return;
-            case AudioWebhookMessage audio:
-                JsonSerializer.Serialize(writer, audio, context.AudioWebhookMessage);
-                return;
-            case VideoWebhookMessage video:
-                JsonSerializer.Serialize(writer, video, context.VideoWebhookMessage);
-                return;
-            case StickerWebhookMessage sticker:
-                JsonSerializer.Serialize(writer, sticker, context.StickerWebhookMessage);
-                return;
-            case LocationWebhookMessage location:
-                JsonSerializer.Serialize(writer, location, context.LocationWebhookMessage);
-                return;
-            case ContactsWebhookMessage contacts:
-                JsonSerializer.Serialize(writer, contacts, context.ContactsWebhookMessage);
-                return;
-            case ButtonWebhookMessage button:
-                JsonSerializer.Serialize(writer, button, context.ButtonWebhookMessage);
-                return;
-            case InteractiveWebhookMessage interactive:
-                JsonSerializer.Serialize(writer, interactive, context.InteractiveWebhookMessage);
-                return;
-            case ReactionWebhookMessage reaction:
-                JsonSerializer.Serialize(writer, reaction, context.ReactionWebhookMessage);
-                return;
-            case RequestWelcomeWebhookMessage requestWelcome:
-                JsonSerializer.Serialize(writer, requestWelcome, context.RequestWelcomeWebhookMessage);
-                return;
-            case SystemWebhookMessage system:
-                JsonSerializer.Serialize(writer, system, context.SystemWebhookMessage);
-                return;
-            default:
-                WriteUnknown(writer, value, context);
-                return;
+            TextWebhookMessage text => ("text", JsonSerializer.SerializeToElement(text, context.TextWebhookMessage)),
+            ImageWebhookMessage image => ("image", JsonSerializer.SerializeToElement(image, context.ImageWebhookMessage)),
+            DocumentWebhookMessage document => ("document", JsonSerializer.SerializeToElement(document, context.DocumentWebhookMessage)),
+            AudioWebhookMessage audio => ("audio", JsonSerializer.SerializeToElement(audio, context.AudioWebhookMessage)),
+            VideoWebhookMessage video => ("video", JsonSerializer.SerializeToElement(video, context.VideoWebhookMessage)),
+            StickerWebhookMessage sticker => ("sticker", JsonSerializer.SerializeToElement(sticker, context.StickerWebhookMessage)),
+            LocationWebhookMessage location => ("location", JsonSerializer.SerializeToElement(location, context.LocationWebhookMessage)),
+            ContactsWebhookMessage contacts => ("contacts", JsonSerializer.SerializeToElement(contacts, context.ContactsWebhookMessage)),
+            ButtonWebhookMessage button => ("button", JsonSerializer.SerializeToElement(button, context.ButtonWebhookMessage)),
+            InteractiveWebhookMessage interactive => ("interactive", JsonSerializer.SerializeToElement(interactive, context.InteractiveWebhookMessage)),
+            ReactionWebhookMessage reaction => ("reaction", JsonSerializer.SerializeToElement(reaction, context.ReactionWebhookMessage)),
+            RequestWelcomeWebhookMessage requestWelcome => ("request_welcome", JsonSerializer.SerializeToElement(requestWelcome, context.RequestWelcomeWebhookMessage)),
+            SystemWebhookMessage system => ("system", JsonSerializer.SerializeToElement(system, context.SystemWebhookMessage)),
+            _ => (value.Type, default(JsonElement)),
+        };
+
+        if (element.ValueKind == JsonValueKind.Undefined)
+        {
+            WriteUnknown(writer, value, context);
+            return;
         }
+
+        // The concrete types carry no "type" property of their own, so it is written here, in
+        // the same position Meta uses (after from/id/timestamp), to keep Read able to dispatch.
+        writer.WriteStartObject();
+        foreach (var property in element.EnumerateObject())
+        {
+            if (property.NameEquals("type"))
+            {
+                continue;
+            }
+
+            property.WriteTo(writer);
+            if (property.NameEquals("timestamp"))
+            {
+                writer.WriteString("type", typeName);
+                typeName = null;
+            }
+        }
+
+        if (typeName is not null)
+        {
+            writer.WriteString("type", typeName);
+        }
+
+        writer.WriteEndObject();
     }
 
     private static WebhookMessage ReadUnknown(JsonElement root, WhatsAppJsonSerializerContext context)
@@ -388,6 +403,11 @@ public sealed class WebhookMessageConverter : JsonConverter<WebhookMessage>
         writer.WriteString("from", value.From);
         writer.WriteString("id", value.Id);
         writer.WriteString("timestamp", value.Timestamp);
+        if (value.Type is not null)
+        {
+            writer.WriteString("type", value.Type);
+        }
+
         if (value.Context is not null)
         {
             writer.WritePropertyName("context");

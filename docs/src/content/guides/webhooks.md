@@ -194,6 +194,16 @@ sealed class SupportHandlers : WhatsAppWebhookHandlers
 
 Media messages carry an ID; download the file with [`IWhatsAppMediaClient`](../media/#download-inbound-media).
 
+### Storing messages
+
+A `WebhookMessage` serializes with its `type` discriminator, so you can store it as JSON and read it back as the same concrete type. `message.Type` holds the raw Meta type; for a type the SDK does not model, the message deserializes as a bare `WebhookMessage` with its fields in `Extra`, and serializing it writes them back unchanged:
+
+```csharp
+var json = JsonSerializer.Serialize(message, WhatsAppJsonSerializerContext.Default.WebhookMessage);
+var stored = JsonSerializer.Deserialize(json, WhatsAppJsonSerializerContext.Default.WebhookMessage);
+// stored is ImageWebhookMessage when message was ImageWebhookMessage
+```
+
 ### Flow replies
 
 When someone completes a [Flow](../flows/), Meta sends an `interactive` message whose nested type is `nfm_reply`. It parses to `WebhookFlowReply`; the answers arrive as a JSON string in `NfmReply.ResponseJson`. The reply does not include the Flow id, so correlate it through the `flow_token` you sent:
