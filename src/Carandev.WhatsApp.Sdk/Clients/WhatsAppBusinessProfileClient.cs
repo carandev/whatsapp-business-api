@@ -9,7 +9,7 @@ namespace Carandev.WhatsApp.Sdk.Clients;
 /// <inheritdoc cref="IWhatsAppBusinessProfileClient" />
 public sealed class WhatsAppBusinessProfileClient : IWhatsAppBusinessProfileClient
 {
-    private const string BusinessProfileFields = "about,address,description,email,websites,vertical,profile_picture_handle";
+    private const string BusinessProfileFields = "about,address,description,email,websites,vertical,profile_picture_url";
 
     private readonly IWhatsAppClient _client;
 

@@ -49,8 +49,19 @@ public sealed class BusinessProfile
     public string? Vertical { get; set; }
 
     /// <summary>
-    /// The opaque handle of the business's uploaded profile picture.
+    /// The URL of the business's current profile picture, as returned by Meta on reads
+    /// (<c>profile_picture_url</c>). Read-only on Meta's side: to change the picture, set
+    /// <see cref="UpdateBusinessProfileRequest.ProfilePictureHandle"/> on an update instead.
     /// </summary>
+    [JsonPropertyName("profile_picture_url")]
+    public string? ProfilePictureUrl { get; set; }
+
+    /// <summary>
+    /// Never populated: Meta accepts <c>profile_picture_handle</c> only when updating a profile
+    /// and does not return it on reads. Use <see cref="ProfilePictureUrl"/> to read the current
+    /// picture, and <see cref="UpdateBusinessProfileRequest.ProfilePictureHandle"/> to change it.
+    /// </summary>
+    [Obsolete("Meta does not return profile_picture_handle on reads. Use ProfilePictureUrl to read the current picture, and UpdateBusinessProfileRequest.ProfilePictureHandle to change it.")]
     [JsonPropertyName("profile_picture_handle")]
     public string? ProfilePictureHandle { get; set; }
 }

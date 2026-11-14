@@ -104,3 +104,5 @@ await businessProfile.UpdateBusinessProfileAsync(new UpdateBusinessProfileReques
 ```
 
 Only the properties you set are sent; omitted properties keep their current value.
+
+To read the current profile picture, use `ProfilePictureUrl`. To change it, upload the image with the Resumable Upload API and set the returned handle as `UpdateBusinessProfileRequest.ProfilePictureHandle`. Meta does not return the handle on reads, so `BusinessProfile.ProfilePictureHandle` is obsolete and always `null`.

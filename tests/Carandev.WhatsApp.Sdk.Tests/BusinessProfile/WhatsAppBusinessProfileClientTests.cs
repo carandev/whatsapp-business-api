@@ -11,11 +11,11 @@ namespace Carandev.WhatsApp.Sdk.Tests.BusinessProfile;
 public class WhatsAppBusinessProfileClientTests
 {
     private const string BusinessProfileJson =
-        """{"about":"We sell widgets","address":"123 Main St","description":"Widget makers since 1999","email":"support@acme.example","websites":["https://acme.example"],"vertical":"RETAIL","profile_picture_handle":"handle-123"}""";
+        """{"about":"We sell widgets","address":"123 Main St","description":"Widget makers since 1999","email":"support@acme.example","websites":["https://acme.example"],"vertical":"RETAIL","profile_picture_url":"https://pps.whatsapp.net/v/profile.jpg"}""";
 
     private const string ErrorBody = """{"error":{"message":"Invalid parameter","type":"OAuthException","code":100}}""";
 
-    private const string ExpectedFieldsQuery = "fields=about,address,description,email,websites,vertical,profile_picture_handle";
+    private const string ExpectedFieldsQuery = "fields=about,address,description,email,websites,vertical,profile_picture_url";
 
     private static WhatsAppOptions CreateOptions() => new()
     {
@@ -100,7 +100,7 @@ public class WhatsAppBusinessProfileClientTests
         Assert.Equal("support@acme.example", profile.Email);
         Assert.Equal(["https://acme.example"], profile.Websites);
         Assert.Equal("RETAIL", profile.Vertical);
-        Assert.Equal("handle-123", profile.ProfilePictureHandle);
+        Assert.Equal("https://pps.whatsapp.net/v/profile.jpg", profile.ProfilePictureUrl);
     }
 
     [Fact]
