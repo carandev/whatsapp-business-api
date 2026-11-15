@@ -52,3 +52,33 @@ Configure one default `PhoneNumberId` and pass `phoneNumberIdOverride` per call 
 ```csharp
 await messages.SendTextAsync("15551234567", "Sent from the support line", phoneNumberIdOverride: "109876543210");
 ```
+
+## Multiple businesses
+
+`AccessToken` is the default token. To call the API for several businesses from one process, for example with per-business tokens from [Embedded Signup](https://developers.facebook.com/docs/whatsapp/embedded-signup), choose the token per request. Combine it with `phoneNumberIdOverride` or `wabaIdOverride`, since a token only grants access to its own business's numbers and WABA.
+
+Wrap the calls in a scope:
+
+```csharp
+using (WhatsAppCredentials.UseAccessToken(tenant.AccessToken))
+{
+    await messages.SendTextAsync("15551234567", "Hello", phoneNumberIdOverride: tenant.PhoneNumberId);
+}
+```
+
+Or register an `IWhatsAppCredentialProvider`, which can be scoped and look the token up asynchronously:
+
+```csharp
+sealed class TenantCredentialProvider(ITenantContext tenant, ITokenStore tokens) : IWhatsAppCredentialProvider
+{
+    public async ValueTask<string?> GetAccessTokenAsync(CancellationToken cancellationToken) =>
+        await tokens.GetAccessTokenAsync(tenant.Id, cancellationToken); // null falls back to AccessToken
+}
+
+builder.Services.AddWhatsAppCloudApi(builder.Configuration);
+builder.Services.AddScoped<IWhatsAppCredentialProvider, TenantCredentialProvider>();
+```
+
+Each request uses the first token found: an active `UseAccessToken` scope, then the provider, then `WhatsAppOptions.AccessToken`. Scopes nest and flow with `async` code, so concurrent requests for different tenants do not share a token. An `Authorization` header you set yourself on a request is sent unchanged.
+
+Keep a valid default `AccessToken` configured: it is still required, and it is the token used when neither a scope nor the provider supplies one. A scoped provider requires resolving the WhatsApp clients from a scope (as ASP.NET Core does per request), not from a singleton or the root provider. A task started inside a scope and left running keeps that scope's token.

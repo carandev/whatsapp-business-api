@@ -23,7 +23,7 @@ public class BusinessProfileSerializationTests
             Email = "hello@example.test",
             Websites = ["https://example.test"],
             Vertical = "RETAIL",
-            ProfilePictureHandle = "handle-123",
+            ProfilePictureUrl = "https://pps.whatsapp.net/v/profile.jpg",
         };
 
         var json = JsonSerializer.Serialize(profile, WhatsAppJsonSerializerContext.Default.BusinessProfile);
@@ -31,6 +31,7 @@ public class BusinessProfileSerializationTests
 
         Assert.Contains("\"about\":\"We sell things.\"", json, StringComparison.Ordinal);
         Assert.Contains("\"vertical\":\"RETAIL\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"profile_picture_url\":\"https://pps.whatsapp.net/v/profile.jpg\"", json, StringComparison.Ordinal);
 
         Assert.NotNull(deserialized);
         Assert.Equal("We sell things.", deserialized!.About);
@@ -39,7 +40,7 @@ public class BusinessProfileSerializationTests
         Assert.Equal("hello@example.test", deserialized.Email);
         Assert.Equal("https://example.test", deserialized.Websites?[0]);
         Assert.Equal("RETAIL", deserialized.Vertical);
-        Assert.Equal("handle-123", deserialized.ProfilePictureHandle);
+        Assert.Equal("https://pps.whatsapp.net/v/profile.jpg", deserialized.ProfilePictureUrl);
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Carandev.WhatsApp.Sdk.Logging;
@@ -17,11 +18,29 @@ public sealed class WhatsAppClient : IWhatsAppClient
     private readonly HttpClient _httpClient;
     private readonly WhatsAppOptions _options;
     private readonly ILogger<WhatsAppClient> _logger;
+    private readonly IWhatsAppCredentialProvider? _credentialProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WhatsAppClient"/> class.
     /// </summary>
     public WhatsAppClient(HttpClient httpClient, IOptions<WhatsAppOptions> options, ILogger<WhatsAppClient> logger)
+        : this(httpClient, options, logger, credentialProvider: null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WhatsAppClient"/> class that resolves the
+    /// access token of each request through <paramref name="credentialProvider"/>.
+    /// </summary>
+    /// <param name="httpClient">The HTTP client used to send requests.</param>
+    /// <param name="options">The SDK options.</param>
+    /// <param name="logger">The logger.</param>
+    /// <param name="credentialProvider">
+    /// The per-request access token source, or <see langword="null"/> to use only
+    /// <see cref="WhatsAppCredentials.UseAccessToken"/> and <see cref="WhatsAppOptions.AccessToken"/>.
+    /// </param>
+    [ActivatorUtilitiesConstructor]
+    public WhatsAppClient(HttpClient httpClient, IOptions<WhatsAppOptions> options, ILogger<WhatsAppClient> logger, IWhatsAppCredentialProvider? credentialProvider = null)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
         ArgumentNullException.ThrowIfNull(options);
@@ -30,6 +49,7 @@ public sealed class WhatsAppClient : IWhatsAppClient
         _httpClient = httpClient;
         _options = options.Value;
         _logger = logger;
+        _credentialProvider = credentialProvider;
     }
 
     /// <inheritdoc />
@@ -82,6 +102,8 @@ public sealed class WhatsAppClient : IWhatsAppClient
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        await ApplyAccessTokenAsync(request, cancellationToken).ConfigureAwait(false);
+
         var method = request.Method;
         var uri = request.RequestUri;
 
@@ -131,6 +153,32 @@ public sealed class WhatsAppClient : IWhatsAppClient
                 var responseBody = await ReadBodyForLoggingAsync(response.Content, cancellationToken).ConfigureAwait(false);
                 _logger.LogDebug("Response body: {Body}", RedactBody(responseBody));
             }
+        }
+    }
+
+    /// <summary>
+    /// Replaces the default token that <see cref="CreateRequest"/> (and its siblings) attached with
+    /// the scoped or provider token, keeping the header's scheme (<c>Bearer</c>, or <c>OAuth</c> for
+    /// resumable upload sessions). A missing header, or one the caller set to another token, is
+    /// left untouched.
+    /// </summary>
+    private async ValueTask ApplyAccessTokenAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var authorization = request.Headers.Authorization;
+        if (authorization is null || !string.Equals(authorization.Parameter, _options.AccessToken, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var token = WhatsAppCredentials.CurrentAccessToken;
+        if (token is null && _credentialProvider is not null)
+        {
+            token = await _credentialProvider.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!string.IsNullOrWhiteSpace(token) && !string.Equals(token, authorization.Parameter, StringComparison.Ordinal))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue(authorization.Scheme, token);
         }
     }
 

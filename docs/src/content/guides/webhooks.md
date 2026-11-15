@@ -137,6 +137,23 @@ sealed class InboxHandlers(IInboxRouter inboxes) : WhatsAppWebhookHandlers
 
 `OnErrorAsync` receives a `null` context when the whole body cannot be parsed, a context with only `WabaId` when one change cannot be parsed, the failing item's full context when a per-item handler throws, and the change's context (no `Contact`) when a batch handler throws.
 
+## Multiple Meta apps
+
+`AppSecret` and `WebhookVerifyToken` belong to a Meta app, so one app serving many numbers needs nothing else. When one endpoint receives webhooks from several apps, pass each app's values explicitly and dispatch the verified body:
+
+```csharp
+var app = apps.ForRoute(appKey); // your own lookup, for example from the route
+
+if (!processor.IsValidSignature(rawBody, signatureHeader, app.AppSecret))
+{
+    return Results.Unauthorized();
+}
+
+await processor.DispatchAsync(rawBody, handlers, cancellationToken);
+```
+
+For the subscription handshake, use `processor.VerifySubscription(verifyToken, challenge, app.VerifyToken)`. Both overloads throw `ArgumentException` when the secret or expected token is empty.
+
 ## Per-item vs batch handlers
 
 Meta groups items: one webhook change can carry several messages or statuses. Choose, per event kind, how you receive them:
@@ -193,6 +210,16 @@ sealed class SupportHandlers : WhatsAppWebhookHandlers
 ```
 
 Media messages carry an ID; download the file with [`IWhatsAppMediaClient`](../media/#download-inbound-media).
+
+### Storing messages
+
+A `WebhookMessage` serializes with its `type` discriminator, so you can store it as JSON and read it back as the same concrete type. `message.Type` holds the raw Meta type; for a type the SDK does not model, the message deserializes as a bare `WebhookMessage` with its fields in `Extra`, and serializing it writes them back unchanged:
+
+```csharp
+var json = JsonSerializer.Serialize(message, WhatsAppJsonSerializerContext.Default.WebhookMessage);
+var stored = JsonSerializer.Deserialize(json, WhatsAppJsonSerializerContext.Default.WebhookMessage);
+// stored is ImageWebhookMessage when message was ImageWebhookMessage
+```
 
 ### Flow replies
 
