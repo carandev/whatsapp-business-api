@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/carandev/whatsapp-business-api/compare/v0.4.0...v0.5.0) (2026-11-15)
+
+
+### Features
+
+* **credentials:** resolve access tokens per request for multi-tenant apps ([0e344a9](https://github.com/carandev/whatsapp-business-api/commit/0e344a9280a419b887ebf85b39531e8445ac1656)), closes [#54](https://github.com/carandev/whatsapp-business-api/issues/54)
+
+
+### Bug Fixes
+
+* **business-profile:** read profile_picture_url instead of profile_picture_handle ([3e27069](https://github.com/carandev/whatsapp-business-api/commit/3e27069cf007414cccf04bd28bc51b090f343c57)), closes [#71](https://github.com/carandev/whatsapp-business-api/issues/71)
+* per-request credentials, business profile picture URL, and webhook message round-trip ([9a64d82](https://github.com/carandev/whatsapp-business-api/commit/9a64d8273e8f3f25558aa703f50cb61260dd44d0))
+* **webhooks:** keep the type discriminator when serializing a WebhookMessage ([a01d742](https://github.com/carandev/whatsapp-business-api/commit/a01d742e44ad8dc2d1ec353f28e6b35ce1042922)), closes [#72](https://github.com/carandev/whatsapp-business-api/issues/72)
+
 ## [0.4.0](https://github.com/carandev/whatsapp-business-api/compare/v0.3.0...v0.4.0) (2026-11-14)
 
 
