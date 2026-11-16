@@ -133,6 +133,58 @@ public class TemplateParameterSerializationTests
         Assert.Throws<ArgumentException>(() => new ImageParameter());
     }
 
+    [Fact]
+    public void TextParameter_WithParameterName_SerializesParameterName()
+    {
+        var component = new BodyParameterComponent([new TextParameter("Ada") { ParameterName = "customer_name" }]);
+
+        var json = JsonSerializer.Serialize<TemplateParameterComponent>(
+            component, WhatsAppJsonSerializerContext.Default.TemplateParameterComponent);
+
+        AssertJsonEquals(
+            """
+            {"type":"body","parameters":[{"type":"text","parameter_name":"customer_name","text":"Ada"}]}
+            """,
+            json);
+    }
+
+    [Fact]
+    public void CurrencyParameter_WithParameterName_SerializesParameterName()
+    {
+        var parameter = new CurrencyParameter(new Currency { FallbackValue = "$1.00", Code = "USD", Amount1000 = 1000 })
+        {
+            ParameterName = "total",
+        };
+
+        var json = JsonSerializer.Serialize<TemplateParameter>(
+            parameter, WhatsAppJsonSerializerContext.Default.TemplateParameter);
+
+        AssertJsonEquals(
+            """
+            {"type":"currency","parameter_name":"total","currency":{"fallback_value":"$1.00","code":"USD","amount_1000":1000}}
+            """,
+            json);
+    }
+
+    [Fact]
+    public void TextParameter_WithoutParameterName_OmitsParameterName()
+    {
+        var component = new BodyParameterComponent([new TextParameter("Ada")]);
+
+        var json = JsonSerializer.Serialize<TemplateParameterComponent>(
+            component, WhatsAppJsonSerializerContext.Default.TemplateParameterComponent);
+
+        Assert.Equal("""{"type":"body","parameters":[{"type":"text","text":"Ada"}]}""", json);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ParameterName_WhenEmptyOrWhitespace_Throws(string name)
+    {
+        Assert.Throws<ArgumentException>(() => new TextParameter("Ada") { ParameterName = name });
+    }
+
     private static void AssertJsonEquals(string expectedJson, string actualJson)
     {
         var expected = JsonNode.Parse(expectedJson);
