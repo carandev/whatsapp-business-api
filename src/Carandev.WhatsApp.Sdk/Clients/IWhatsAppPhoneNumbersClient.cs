@@ -248,4 +248,54 @@ public interface IWhatsAppPhoneNumbersClient
     Task<Result<PhoneNumberWebhookConfiguration>> GetWebhookConfigurationAsync(string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
         throw new NotSupportedException(
             $"{GetType().FullName} does not implement {nameof(GetWebhookConfigurationAsync)}. Use WhatsAppPhoneNumbersClient or implement the member.");
+
+    /// <summary>
+    /// Sets or replaces the business public key that WhatsApp uses to encrypt this phone number's
+    /// Flow data endpoint requests, via <c>POST /{phone_number_id}/whatsapp_business_encryption</c>
+    /// with <c>business_public_key</c>. Flows with a data endpoint (<c>data_exchange</c>) need it;
+    /// <see cref="Flows.FlowEndpointCrypto"/> decrypts the requests with the matching private key,
+    /// and <see cref="Flows.FlowEndpointCrypto.ExportPublicKeyPem"/> exports this public key.
+    /// </summary>
+    /// <param name="publicKeyPem">The RSA public key in PEM format (<c>BEGIN PUBLIC KEY</c>).</param>
+    /// <param name="phoneNumberIdOverride">
+    /// An optional phone number id that takes precedence over
+    /// <see cref="WhatsAppOptions.PhoneNumberId"/> when resolving the target phone number. When
+    /// omitted, <see cref="WhatsAppOptions.PhoneNumberId"/> is used.
+    /// </param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>A successful <see cref="Result"/> on success; a failed <see cref="Result"/> otherwise.</returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="publicKeyPem"/> is null, empty, or whitespace. No request is sent.
+    /// </exception>
+    /// <remarks>
+    /// The default implementation throws <see cref="NotSupportedException"/> so that third-party
+    /// implementations written against earlier versions keep compiling;
+    /// <see cref="WhatsAppPhoneNumbersClient"/> implements it.
+    /// </remarks>
+    Task<Result> SetBusinessPublicKeyAsync(string publicKeyPem, string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+        throw new NotSupportedException(
+            $"{GetType().FullName} does not implement {nameof(SetBusinessPublicKeyAsync)}. Use WhatsAppPhoneNumbersClient or implement the member.");
+
+    /// <summary>
+    /// Reads the business public key registered on this phone number and its signature status,
+    /// via <c>GET /{phone_number_id}/whatsapp_business_encryption</c>.
+    /// </summary>
+    /// <param name="phoneNumberIdOverride">
+    /// An optional phone number id that takes precedence over
+    /// <see cref="WhatsAppOptions.PhoneNumberId"/> when resolving the target phone number. When
+    /// omitted, <see cref="WhatsAppOptions.PhoneNumberId"/> is used.
+    /// </param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns>
+    /// A successful <see cref="Result{T}"/> wrapping the <see cref="BusinessEncryptionKey"/>; a
+    /// failed <see cref="Result{T}"/> otherwise.
+    /// </returns>
+    /// <remarks>
+    /// The default implementation throws <see cref="NotSupportedException"/> so that third-party
+    /// implementations written against earlier versions keep compiling;
+    /// <see cref="WhatsAppPhoneNumbersClient"/> implements it.
+    /// </remarks>
+    Task<Result<BusinessEncryptionKey>> GetBusinessPublicKeyAsync(string? phoneNumberIdOverride = null, CancellationToken ct = default) =>
+        throw new NotSupportedException(
+            $"{GetType().FullName} does not implement {nameof(GetBusinessPublicKeyAsync)}. Use WhatsAppPhoneNumbersClient or implement the member.");
 }

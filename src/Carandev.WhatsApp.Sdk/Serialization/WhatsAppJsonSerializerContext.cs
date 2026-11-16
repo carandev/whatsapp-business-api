@@ -103,6 +103,10 @@ namespace Carandev.WhatsApp.Sdk.Serialization;
 [JsonSerializable(typeof(RegisterPhoneNumberRequest))]
 [JsonSerializable(typeof(TwoStepVerificationPinRequest))]
 [JsonSerializable(typeof(PhoneNumberWebhookOverrideRequest))]
+// Phone numbers — business public key for Flow data endpoints (issue #78)
+[JsonSerializable(typeof(BusinessPublicKeyRequest))]
+[JsonSerializable(typeof(BusinessEncryptionKey))]
+[JsonSerializable(typeof(BusinessPublicKeySignatureStatus))]
 // Business profile — DTOs and serializer registration (PR1 of issue #5)
 [JsonSerializable(typeof(global::Carandev.WhatsApp.Sdk.Models.BusinessProfile.BusinessProfile))]
 [JsonSerializable(typeof(BusinessProfileResponse))]

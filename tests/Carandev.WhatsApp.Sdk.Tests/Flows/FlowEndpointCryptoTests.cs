@@ -30,6 +30,24 @@ public class FlowEndpointCryptoTests
         return JsonSerializer.Serialize(fields);
     }
 
+    // ---------- public key export (#78) ----------
+
+    [Fact]
+    public void ExportPublicKeyPem_ReturnsSubjectPublicKeyInfo_OfThePrivateKey()
+    {
+        using var crypto = CreateCrypto();
+        using var privateKey = RSA.Create();
+        privateKey.ImportFromPem(Vector("privateKeyPkcs8"));
+
+        var pem = crypto.ExportPublicKeyPem();
+
+        Assert.StartsWith("-----BEGIN PUBLIC KEY-----", pem, StringComparison.Ordinal);
+        using var publicKey = RSA.Create();
+        publicKey.ImportFromPem(pem);
+        Assert.Equal(privateKey.ExportParameters(false).Modulus, publicKey.ExportParameters(false).Modulus);
+        Assert.Equal(privateKey.ExportParameters(false).Exponent, publicKey.ExportParameters(false).Exponent);
+    }
+
     // ---------- decrypt ----------
 
     [Fact]

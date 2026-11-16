@@ -89,6 +89,10 @@ await phoneNumbers.ClearWebhookOverrideAsync();
 
 The callback must be an absolute HTTPS URL, and the verify token must not be empty; otherwise `ArgumentException` is thrown before any request is sent. A plain `GetPhoneNumberAsync` call does not include `webhook_configuration`, so use `GetWebhookConfigurationAsync` to read it.
 
+### Flow endpoint public key
+
+Flows with a data endpoint need the business public key registered on the number. Use `SetBusinessPublicKeyAsync` and `GetBusinessPublicKeyAsync`; the Flows guide (Registering the public key) shows them with `FlowEndpointCrypto`.
+
 ## Business profile
 
 ```csharp

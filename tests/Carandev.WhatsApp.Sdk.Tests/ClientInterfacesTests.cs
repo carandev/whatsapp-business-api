@@ -153,6 +153,8 @@ public class ClientInterfacesTests
         { nameof(IWhatsAppPhoneNumbersClient.SetWebhookOverrideAsync), c => c.SetWebhookOverrideAsync(new Uri("https://example.com"), "t") },
         { nameof(IWhatsAppPhoneNumbersClient.ClearWebhookOverrideAsync), c => c.ClearWebhookOverrideAsync() },
         { nameof(IWhatsAppPhoneNumbersClient.GetWebhookConfigurationAsync), c => c.GetWebhookConfigurationAsync() },
+        { nameof(IWhatsAppPhoneNumbersClient.SetBusinessPublicKeyAsync), c => c.SetBusinessPublicKeyAsync("pem") },
+        { nameof(IWhatsAppPhoneNumbersClient.GetBusinessPublicKeyAsync), c => c.GetBusinessPublicKeyAsync() },
     };
 
     [Theory]
@@ -271,12 +273,14 @@ public class ClientInterfacesTests
             {
                 nameof(IWhatsAppPhoneNumbersClient.ClearWebhookOverrideAsync),
                 nameof(IWhatsAppPhoneNumbersClient.DeregisterAsync),
+                nameof(IWhatsAppPhoneNumbersClient.GetBusinessPublicKeyAsync),
                 nameof(IWhatsAppPhoneNumbersClient.GetPhoneNumberAsync),
                 nameof(IWhatsAppPhoneNumbersClient.GetWebhookConfigurationAsync),
                 nameof(IWhatsAppPhoneNumbersClient.ListPhoneNumbersAsync),
                 nameof(IWhatsAppPhoneNumbersClient.ListPhoneNumbersAsync),
                 nameof(IWhatsAppPhoneNumbersClient.RegisterAsync),
                 nameof(IWhatsAppPhoneNumbersClient.RequestVerificationCodeAsync),
+                nameof(IWhatsAppPhoneNumbersClient.SetBusinessPublicKeyAsync),
                 nameof(IWhatsAppPhoneNumbersClient.SetTwoStepVerificationPinAsync),
                 nameof(IWhatsAppPhoneNumbersClient.SetWebhookOverrideAsync),
                 nameof(IWhatsAppPhoneNumbersClient.VerifyCodeAsync),
