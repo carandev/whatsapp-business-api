@@ -98,6 +98,24 @@ public sealed record PhoneNumberWebhookOverride
 }
 
 /// <summary>
+/// Wire body of <c>POST /{phone-number-id}/whatsapp_business_encryption</c>, built by
+/// <c>IWhatsAppPhoneNumbersClient.SetBusinessPublicKeyAsync</c>.
+/// </summary>
+public sealed record BusinessPublicKeyRequest
+{
+    internal BusinessPublicKeyRequest(string businessPublicKey)
+    {
+        BusinessPublicKey = businessPublicKey;
+    }
+
+    /// <summary>
+    /// The business public key in PEM format.
+    /// </summary>
+    [JsonPropertyName("business_public_key")]
+    public string BusinessPublicKey { get; }
+}
+
+/// <summary>
 /// Validation shared by the phone number management calls.
 /// </summary>
 internal static class PhoneNumberArguments

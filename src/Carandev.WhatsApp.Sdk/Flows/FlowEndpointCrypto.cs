@@ -172,6 +172,19 @@ public sealed class FlowEndpointCrypto : IDisposable
     }
 
     /// <summary>
+    /// Exports the public half of the private key as a PEM (<c>BEGIN PUBLIC KEY</c>), ready for
+    /// <c>IWhatsAppPhoneNumbersClient.SetBusinessPublicKeyAsync</c>, so the key registered on the
+    /// phone number and the key used to decrypt come from the same key pair.
+    /// </summary>
+    /// <returns>The public key in PEM format (SubjectPublicKeyInfo).</returns>
+    /// <exception cref="ObjectDisposedException">This instance was disposed.</exception>
+    public string ExportPublicKeyPem()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return _privateKey.ExportSubjectPublicKeyInfoPem();
+    }
+
+    /// <summary>
     /// Disposes the private key when it was created by <see cref="FromPem"/>.
     /// </summary>
     public void Dispose()

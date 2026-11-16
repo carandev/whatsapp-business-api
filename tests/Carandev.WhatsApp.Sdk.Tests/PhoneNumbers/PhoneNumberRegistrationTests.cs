@@ -3,13 +3,15 @@ using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Carandev.WhatsApp.Sdk.Clients;
+using Carandev.WhatsApp.Sdk.Models.PhoneNumbers;
 using Carandev.WhatsApp.Sdk.Tests.Fakes;
 
 namespace Carandev.WhatsApp.Sdk.Tests.PhoneNumbers;
 
 /// <summary>
 /// #64 (register, deregister, two-step verification PIN) and #66 (per phone number webhook
-/// override) on <see cref="WhatsAppPhoneNumbersClient"/>.
+/// override) and #78 (business public key for Flow endpoints) on
+/// <see cref="WhatsAppPhoneNumbersClient"/>.
 /// </summary>
 public class PhoneNumberRegistrationTests
 {
@@ -305,6 +307,101 @@ public class PhoneNumberRegistrationTests
         var (client, _) = CreateClient(HttpStatusCode.BadRequest, ErrorBody);
 
         var result = await client.GetWebhookConfigurationAsync();
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(133016, result.Error!.Code);
+    }
+
+    // ---------- Business public key (#78) ----------
+
+    private const string PublicKeyPem = "-----BEGIN PUBLIC KEY-----\nMIIBIjAN\n-----END PUBLIC KEY-----";
+
+    [Fact]
+    public async Task SetBusinessPublicKeyAsync_PostsPublicKey_ToEncryptionEdge()
+    {
+        var (client, handler) = CreateClient();
+
+        var result = await client.SetBusinessPublicKeyAsync(PublicKeyPem);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
+        Assert.Equal(Uri("default-phone-id/whatsapp_business_encryption"), handler.LastRequest.RequestUri!.ToString());
+        Assert.Equal(
+            """{"business_public_key":"-----BEGIN PUBLIC KEY-----\nMIIBIjAN\n-----END PUBLIC KEY-----"}""",
+            await BodyAsync(handler));
+    }
+
+    [Fact]
+    public async Task SetBusinessPublicKeyAsync_WithOverride_PostsToOverriddenNumber()
+    {
+        var (client, handler) = CreateClient();
+
+        await client.SetBusinessPublicKeyAsync(PublicKeyPem, "other-phone-id");
+
+        Assert.Equal(Uri("other-phone-id/whatsapp_business_encryption"), handler.LastRequest!.RequestUri!.ToString());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task SetBusinessPublicKeyAsync_WithEmptyPem_ThrowsWithoutSendingRequest(string? pem)
+    {
+        var (client, handler) = CreateClient();
+
+        await Assert.ThrowsAnyAsync<ArgumentException>(() => client.SetBusinessPublicKeyAsync(pem!));
+
+        Assert.Null(handler.LastRequest);
+    }
+
+    [Fact]
+    public async Task SetBusinessPublicKeyAsync_ReturnsFailure_WithMetaError()
+    {
+        var (client, _) = CreateClient(HttpStatusCode.BadRequest, ErrorBody);
+
+        var result = await client.SetBusinessPublicKeyAsync(PublicKeyPem);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(133016, result.Error!.Code);
+    }
+
+    [Theory]
+    [InlineData("VALID", BusinessPublicKeySignatureStatus.Valid)]
+    [InlineData("MISMATCH", BusinessPublicKeySignatureStatus.Mismatch)]
+    [InlineData("SOMETHING_NEW", BusinessPublicKeySignatureStatus.Unknown)]
+    public async Task GetBusinessPublicKeyAsync_ReadsKeyAndSignatureStatus(string wireStatus, BusinessPublicKeySignatureStatus expected)
+    {
+        var (client, handler) = CreateClient(
+            body: $$"""{"business_public_key":"-----BEGIN PUBLIC KEY-----\nMIIBIjAN\n-----END PUBLIC KEY-----","business_public_key_signature_status":"{{wireStatus}}"}""");
+
+        var result = await client.GetBusinessPublicKeyAsync("other-phone-id");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(HttpMethod.Get, handler.LastRequest!.Method);
+        Assert.Equal(Uri("other-phone-id/whatsapp_business_encryption"), handler.LastRequest.RequestUri!.ToString());
+        Assert.Equal(PublicKeyPem, result.Value!.PublicKey);
+        Assert.Equal(expected, result.Value.SignatureStatus);
+    }
+
+    [Fact]
+    public async Task GetBusinessPublicKeyAsync_WithoutOverride_ReadsDefaultNumber()
+    {
+        var (client, handler) = CreateClient(body: "{}");
+
+        var result = await client.GetBusinessPublicKeyAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(Uri("default-phone-id/whatsapp_business_encryption"), handler.LastRequest!.RequestUri!.ToString());
+        Assert.Null(result.Value!.PublicKey);
+        Assert.Null(result.Value.SignatureStatus);
+    }
+
+    [Fact]
+    public async Task GetBusinessPublicKeyAsync_ReturnsFailure_WithMetaError()
+    {
+        var (client, _) = CreateClient(HttpStatusCode.BadRequest, ErrorBody);
+
+        var result = await client.GetBusinessPublicKeyAsync();
 
         Assert.False(result.IsSuccess);
         Assert.Equal(133016, result.Error!.Code);

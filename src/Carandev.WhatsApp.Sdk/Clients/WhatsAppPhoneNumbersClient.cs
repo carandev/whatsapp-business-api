@@ -151,6 +151,27 @@ public sealed class WhatsAppPhoneNumbersClient : IWhatsAppPhoneNumbersClient
             : Result<PhoneNumberWebhookConfiguration>.Failure(result.Error!);
     }
 
+    /// <inheritdoc />
+    public Task<Result> SetBusinessPublicKeyAsync(string publicKeyPem, string? phoneNumberIdOverride = null, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(publicKeyPem);
+
+        return PostAsync(
+            "{phone_number_id}/whatsapp_business_encryption",
+            phoneNumberIdOverride,
+            CreateJsonContent(new BusinessPublicKeyRequest(publicKeyPem), WhatsAppJsonSerializerContext.Default.BusinessPublicKeyRequest),
+            ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<BusinessEncryptionKey>> GetBusinessPublicKeyAsync(string? phoneNumberIdOverride = null, CancellationToken ct = default)
+    {
+        var httpRequest = _client.CreateRequest(HttpMethod.Get, "{phone_number_id}/whatsapp_business_encryption", phoneNumberIdOverride);
+
+        var response = await _client.SendAsync(httpRequest, ct).ConfigureAwait(false);
+        return await ReadResultAsync(response, WhatsAppJsonSerializerContext.Default.BusinessEncryptionKey, ct).ConfigureAwait(false);
+    }
+
     private Task<Result> PostWebhookOverrideAsync(PhoneNumberWebhookOverride webhookOverride, string? phoneNumberIdOverride, CancellationToken ct) =>
         PostAsync(
             "{phone_number_id}",

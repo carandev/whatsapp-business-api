@@ -70,7 +70,7 @@ Every method returns a `Result`; Meta's errors (for example `139001`, updating a
 
 ## Data endpoint
 
-A Flow with an endpoint asks your server for screen data (`data_exchange`) instead of shipping it all in the Flow JSON. Every request is encrypted for your RSA key pair; [Meta's endpoint guide](https://developers.facebook.com/docs/whatsapp/flows/guides/implementingyourflowendpoint) covers generating the keys and uploading the public key for the phone number. `FlowEndpointCrypto` handles the protocol, and like the webhook processor it never touches HTTP: it takes the raw body string and gives back the response body string.
+A Flow with an endpoint asks your server for screen data (`data_exchange`) instead of shipping it all in the Flow JSON. Every request is encrypted for your RSA key pair; [Meta's endpoint guide](https://developers.facebook.com/docs/whatsapp/flows/guides/implementingyourflowendpoint) covers generating the keys; register the public key on the phone number with the SDK as shown in [Registering the public key](#registering-the-public-key). `FlowEndpointCrypto` handles the protocol, and like the webhook processor it never touches HTTP: it takes the raw body string and gives back the response body string.
 
 ```csharp
 using System.Text.Json.Nodes;
@@ -138,5 +138,20 @@ app.MapPost("/flows/booking", async (HttpRequest request) =>
 `FlowEndpointRequest` exposes `Action` (`INIT`, `BACK`, `data_exchange`, `ping`; see `FlowEndpointActions`), `Screen`, `Data` as a `JsonElement`, `FlowToken`, and the raw `DecryptedJson`. `EncryptResponse<T>(value, typeInfo)` serializes through your own source-generated context. Responding with the `SUCCESS` screen and `extension_message_response.params` closes the Flow; those params, including the required `flow_token`, arrive later as the [`nfm_reply` webhook](../webhooks/#flow-replies). To reject an expired token, return `FlowEndpointStatusCodes.FlowTokenExpired` (427) with an encrypted `{"error_msg":"..."}`.
 
 `FromPem` reads unencrypted PKCS#8 or PKCS#1 keys and, with a passphrase, encrypted PKCS#8 keys. Keys encrypted the legacy OpenSSL way (`Proc-Type: 4,ENCRYPTED`, which Meta's sample script produces) are not readable by .NET; convert them once with `openssl pkcs8 -topk8 -in private.pem -out private-pkcs8.pem`. You can also pass your own `RSA` instance (for example from a key vault) to the constructor.
+
+### Registering the public key
+
+WhatsApp encrypts each request with the business public key registered on the phone number. Export it from the same `FlowEndpointCrypto` that decrypts, so both sides use one key pair, and register it once per number:
+
+```csharp
+var phoneNumbers = app.Services.GetRequiredService<IWhatsAppPhoneNumbersClient>();
+
+await phoneNumbers.SetBusinessPublicKeyAsync(crypto.ExportPublicKeyPem());
+
+var key = await phoneNumbers.GetBusinessPublicKeyAsync();
+Console.WriteLine(key.Value?.SignatureStatus); // Valid, Mismatch, or Unknown
+```
+
+Setting a key replaces the previous one. An empty PEM throws `ArgumentException` before any request is sent. Both methods take an optional phone number id override, like the other phone number calls.
 
 AES-GCM uses a 16-byte IV here, which .NET's `AesGcm` does not accept, so the SDK builds GCM on the platform AES cipher and checks it against vectors produced by OpenSSL through Node.js, including Meta's own encryption sample.
