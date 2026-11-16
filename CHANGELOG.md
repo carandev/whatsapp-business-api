@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/carandev/whatsapp-business-api/compare/v0.5.0...v0.5.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **messages:** add ParameterName to template parameters for named templates ([1716457](https://github.com/carandev/whatsapp-business-api/commit/1716457af385741e29f279abd9ec5e1b2428ce63))
+* **messages:** add ParameterName to template parameters for named templates ([8506767](https://github.com/carandev/whatsapp-business-api/commit/85067677b5d113e113b72c73afca1afdeb8c2811)), closes [#75](https://github.com/carandev/whatsapp-business-api/issues/75)
+
 ## [0.5.0](https://github.com/carandev/whatsapp-business-api/compare/v0.4.0...v0.5.0) (2026-11-15)
 
 
