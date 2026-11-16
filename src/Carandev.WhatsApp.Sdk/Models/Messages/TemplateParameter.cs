@@ -20,6 +20,31 @@ public abstract record TemplateParameter
     private protected TemplateParameter()
     {
     }
+
+    /// <summary>
+    /// The placeholder name this value fills, serialized as Meta's <c>parameter_name</c>. Required
+    /// on every body and text-header parameter of a template created with
+    /// <c>parameter_format: NAMED</c> (e.g. <c>customer_name</c> for <c>{{customer_name}}</c>).
+    /// Leave unset for positional templates; it is omitted from the JSON when <see langword="null"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when set to an empty or whitespace value.</exception>
+    [JsonPropertyName("parameter_name")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ParameterName
+    {
+        get => _parameterName;
+        init
+        {
+            if (value is not null)
+            {
+                ArgumentException.ThrowIfNullOrWhiteSpace(value);
+            }
+
+            _parameterName = value;
+        }
+    }
+
+    private readonly string? _parameterName;
 }
 
 /// <summary>

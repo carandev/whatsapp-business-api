@@ -74,6 +74,19 @@ await messages.SendTemplateAsync(to, "order_update", "en_US",
 ]);
 ```
 
+Templates created with named placeholders (`parameter_format: NAMED`, e.g. `{{customer_name}}`) require every body and text-header parameter to carry its name. Set `ParameterName`; it is serialized as `parameter_name` only when set, so positional templates are unaffected:
+
+```csharp
+await messages.SendTemplateAsync(to, "order_update", "en_US",
+[
+    new BodyParameterComponent(
+    [
+        new TextParameter("Ada") { ParameterName = "customer_name" },
+        new TextParameter("Friday") { ParameterName = "delivery_day" },
+    ]),
+]);
+```
+
 Available parameter types: `TextParameter`, `CurrencyParameter`, and `DateTimeParameter` for text variables; `ImageParameter`, `DocumentParameter`, and `VideoParameter` for media headers; and `PayloadParameter` for quick-reply buttons.
 
 ## Interactive messages
