@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/carandev/whatsapp-business-api/compare/v0.5.1...v0.6.0) (2026-11-16)
+
+
+### Features
+
+* **phone-numbers:** register the business public key for Flow data endpoints ([b4f3d71](https://github.com/carandev/whatsapp-business-api/commit/b4f3d716082725f76791e6b108443bc17a204376))
+* **phone-numbers:** register the business public key for Flow data endpoints ([f2ca113](https://github.com/carandev/whatsapp-business-api/commit/f2ca11376585013a2749218ec4a5b9cf6d0df5f5)), closes [#78](https://github.com/carandev/whatsapp-business-api/issues/78)
+
 ## [0.5.1](https://github.com/carandev/whatsapp-business-api/compare/v0.5.0...v0.5.1) (2026-11-16)
 
 
